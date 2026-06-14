@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS hospitales (
     id         SERIAL PRIMARY KEY,
     nombre     VARCHAR(150) NOT NULL,
     direccion  VARCHAR(255),
+    email      VARCHAR(150),
+    logo       TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
