@@ -1,0 +1,252 @@
+/* ================================================
+   HEALTHNET V2 — HOSPITAL THEMES
+   Cada hospital tiene su propia identidad visual
+   ================================================ */
+
+/* ------------------------------------------------
+   HOSPITAL 1 — Cayetano Heredia
+   Color: Dorado y Blanco
+   ------------------------------------------------ */
+body.theme-hospital-1 {
+  --primary-color:    #C9A84C;
+  --primary-light:    #F0D080;
+  --primary-dark:     #8B6914;
+  --primary-text:     #ffffff;
+  --sidebar-bg:       rgba(15, 10, 3, 0.94);
+  --sidebar-link-hover: #C9A84C;
+  --topbar-accent:    #C9A84C;
+  --kpi-accent:       #C9A84C;
+  --btn-bg:           #C9A84C;
+  --btn-hover:        #B8902A;
+  --alert-color:      #ef4444;
+  background-image: url("../assets/images/fondos/fondo_inicio.png");
+}
+
+body.theme-hospital-1 .sidebar {
+  background: rgba(10, 7, 2, 0.95);
+  border-right: 1px solid rgba(201, 168, 76, 0.3);
+}
+
+body.theme-hospital-1 .sidebar-links a:hover,
+body.theme-hospital-1 .sidebar-links a.active {
+  background: rgba(201, 168, 76, 0.2);
+  border-left: 3px solid #C9A84C;
+  color: #F0D080;
+}
+
+body.theme-hospital-1 .topbar {
+  border-bottom: 1px solid rgba(201, 168, 76, 0.2);
+}
+
+body.theme-hospital-1 .hospital-badge {
+  background: linear-gradient(135deg, #C9A84C, #8B6914);
+  color: #ffffff;
+}
+
+body.theme-hospital-1 button,
+body.theme-hospital-1 .btn-primary {
+  background: #C9A84C;
+  color: #ffffff;
+}
+body.theme-hospital-1 button:hover {
+  background: #B8902A;
+}
+
+/* ------------------------------------------------
+   HOSPITAL 2 — Hospital Almenara (HNAL)
+   Color: Verde y Blanco
+   ------------------------------------------------ */
+body.theme-hospital-2 {
+  --primary-color:    #16a34a;
+  --primary-light:    #4ade80;
+  --primary-dark:     #0f5f2e;
+  --primary-text:     #ffffff;
+  --sidebar-bg:       rgba(2, 12, 5, 0.94);
+  --sidebar-link-hover: #16a34a;
+  --topbar-accent:    #16a34a;
+  --kpi-accent:       #16a34a;
+  --btn-bg:           #16a34a;
+  --btn-hover:        #0f5f2e;
+  --alert-color:      #ef4444;
+  background-image: url("../assets/images/fondos/fondo_inicio.png");
+}
+
+body.theme-hospital-2 .sidebar {
+  background: rgba(2, 10, 4, 0.95);
+  border-right: 1px solid rgba(22, 163, 74, 0.3);
+}
+
+body.theme-hospital-2 .sidebar-links a:hover,
+body.theme-hospital-2 .sidebar-links a.active {
+  background: rgba(22, 163, 74, 0.2);
+  border-left: 3px solid #16a34a;
+  color: #4ade80;
+}
+
+body.theme-hospital-2 .topbar {
+  border-bottom: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+body.theme-hospital-2 .hospital-badge {
+  background: linear-gradient(135deg, #16a34a, #0f5f2e);
+  color: #ffffff;
+}
+
+body.theme-hospital-2 button,
+body.theme-hospital-2 .btn-primary {
+  background: #16a34a;
+  color: #ffffff;
+}
+body.theme-hospital-2 button:hover {
+  background: #0f5f2e;
+}
+
+/* ------------------------------------------------
+   HOSPITAL 3 — Dos de Mayo (HNDM)
+   Color: Azul y Blanco
+   ------------------------------------------------ */
+body.theme-hospital-3 {
+  --primary-color:    #2563eb;
+  --primary-light:    #60a5fa;
+  --primary-dark:     #1e40af;
+  --primary-text:     #ffffff;
+  --sidebar-bg:       rgba(2, 5, 15, 0.94);
+  --sidebar-link-hover: #2563eb;
+  --topbar-accent:    #2563eb;
+  --kpi-accent:       #2563eb;
+  --btn-bg:           #2563eb;
+  --btn-hover:        #1e40af;
+  --alert-color:      #ef4444;
+  background-image: url("../assets/images/fondos/fondo_inicio.png");
+}
+
+body.theme-hospital-3 .sidebar {
+  background: rgba(2, 4, 14, 0.95);
+  border-right: 1px solid rgba(37, 99, 235, 0.3);
+}
+
+body.theme-hospital-3 .sidebar-links a:hover,
+body.theme-hospital-3 .sidebar-links a.active {
+  background: rgba(37, 99, 235, 0.2);
+  border-left: 3px solid #2563eb;
+  color: #60a5fa;
+}
+
+body.theme-hospital-3 .topbar {
+  border-bottom: 1px solid rgba(37, 99, 235, 0.2);
+}
+
+body.theme-hospital-3 .hospital-badge {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: #ffffff;
+}
+
+body.theme-hospital-3 button,
+body.theme-hospital-3 .btn-primary {
+  background: #2563eb;
+  color: #ffffff;
+}
+body.theme-hospital-3 button:hover {
+  background: #1e40af;
+}
+
+/* ------------------------------------------------
+   ADMIN — Sin hospital (Gris neutro)
+   ------------------------------------------------ */
+body.theme-admin {
+  --primary-color:    #6366f1;
+  --primary-light:    #a5b4fc;
+  --primary-dark:     #4338ca;
+  --primary-text:     #ffffff;
+  --sidebar-bg:       rgba(10, 10, 15, 0.94);
+  --sidebar-link-hover: #6366f1;
+  --topbar-accent:    #6366f1;
+  --kpi-accent:       #6366f1;
+  --btn-bg:           #6366f1;
+  --btn-hover:        #4338ca;
+  --alert-color:      #ef4444;
+  background-image: url("../assets/images/fondos/fondo_inicio.png");
+}
+
+body.theme-admin .sidebar {
+  background: rgba(8, 8, 12, 0.95);
+  border-right: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+body.theme-admin .sidebar-links a:hover,
+body.theme-admin .sidebar-links a.active {
+  background: rgba(99, 102, 241, 0.2);
+  border-left: 3px solid #6366f1;
+  color: #a5b4fc;
+}
+
+/* ------------------------------------------------
+   FONDOS POR PÁGINA (aplica en todas las páginas)
+   ------------------------------------------------ */
+body.page-login {
+  background-image: url("../assets/images/fondos/fondo_login.png") !important;
+  background-size: cover;
+  background-position: center;
+}
+
+body.page-diagnostico {
+  background-image: url("../assets/images/fondos/fondo_diagnostico.png") !important;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+body.page-historial {
+  background-image: url("../assets/images/fondos/fondo_historial.png") !important;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+body.page-perfil {
+  background-image: url("../assets/images/fondos/fondo_perfil.png") !important;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+/* ------------------------------------------------
+   HOSPITAL LOGO en sidebar
+   ------------------------------------------------ */
+.hospital-logo-sidebar {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: contain;
+  background: white;
+  padding: 2px;
+}
+
+/* ------------------------------------------------
+   KPI CARDS — usan el color del hospital
+   ------------------------------------------------ */
+.kpi p {
+  color: var(--primary-color);
+}
+.kpi {
+  border-top: 3px solid var(--primary-color);
+}
+
+/* ------------------------------------------------
+   BADGE del hospital en topbar
+   ------------------------------------------------ */
+.hospital-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+}
+
+/* ------------------------------------------------
+   LOGOUT BUTTON — siempre rojo
+   ------------------------------------------------ */
+.logout-btn {
+  background: #dc2626 !important;
+  color: white !important;
+}
+.logout-btn:hover {
+  background: #ef4444 !important;
+}

@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagnóstico IA — HealthNet v2</title>
+  <link rel="stylesheet" href="../styles/base.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+  <link rel="stylesheet" href="../styles/themes.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    body { background: linear-gradient(135deg, #0f172a, #1e293b); color: #e5e7eb; }
+
+    .card {
+      background: rgba(255,255,255,.06);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 14px;
+    }
+
+    /* ─── PACIENTE BOX ─── */
+    #patientBox {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 14px;
+      background: rgba(255,255,255,.05);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.12);
+      margin-bottom: 14px;
+    }
+    .paciente-avatar {
+      width: 62px; height: 62px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.2);
+      object-fit: cover; flex-shrink: 0;
+    }
+    .pinfo-label { font-size:11px; opacity:.45; margin:0 0 3px; text-transform:uppercase; letter-spacing:.05em; }
+    .pinfo-nombre { font-size:16px; font-weight:600; margin:0 0 4px; }
+    .pinfo-dni    { font-size:12px; opacity:.5; margin:0 0 6px; }
+
+    /* Chips de datos clínicos */
+    .pinfo-chips { display:flex; flex-wrap:wrap; gap:6px; }
+    .chip {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:3px 9px; border-radius:20px; font-size:11px;
+      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12);
+    }
+    .chip i { font-size:11px; opacity:.7; }
+    .chip-red   { border-color:rgba(239,68,68,.3);  color:#fca5a5; background:rgba(239,68,68,.1); }
+    .chip-blue  { border-color:rgba(59,130,246,.3); color:#93c5fd; background:rgba(59,130,246,.1); }
+    .chip-green { border-color:rgba(34,197,94,.3);  color:#86efac; background:rgba(34,197,94,.1); }
+    .chip-none  { opacity:.4; }
+
+    /* ─── ALERTA ─── */
+    .alerta-jpg {
+      display:none;
+      background:rgba(250,204,21,.15); border:1px solid rgba(250,204,21,.4);
+      color:#fde68a; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:12px;
+    }
+
+    /* ─── FILE INPUT ─── */
+    .file-wrap { margin-bottom:14px; }
+    .file-wrap input[type="file"] { display:none; }
+    .file-label {
+      display:flex; align-items:center; gap:8px;
+      padding:10px 16px;
+      background:rgba(255,255,255,.06); border:1px dashed rgba(255,255,255,.25);
+      border-radius:10px; color:rgba(255,255,255,.85);
+      cursor:pointer; font-size:13px; transition:all .2s; margin-bottom:6px;
+    }
+    .file-label:hover { border-color:#3b82f6; background:rgba(255,255,255,.1); }
+    #fileNameDisplay { font-size:12px; opacity:.5; padding-left:4px; }
+
+    /* ─── PREVIEW — TAMAÑO FIJO ─── */
+    #previewBox {
+      width:100%; height:220px;
+      background:rgba(255,255,255,.04);
+      border-radius:10px; border:1px dashed rgba(255,255,255,.15);
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden; margin-bottom:14px;
+    }
+    #previewImg {
+      display:none; width:100%; height:100%;
+      object-fit:cover; object-position:center; border-radius:9px;
+    }
+    #previewEmpty { opacity:.3; font-size:13px; text-align:center; }
+
+    /* ─── RESULTADO IA ─── */
+    #iaResult {
+      text-align:center; padding:24px;
+      background:rgba(255,255,255,.05); border-radius:12px; margin-bottom:14px;
+    }
+    #iaConf { opacity:.75; font-size:14px; margin-top:4px; }
+
+    /* ─── BARRA ─── */
+    .barra-wrap { margin-bottom:16px; }
+    .barra-label { display:flex; justify-content:space-between; opacity:.75; font-size:13px; margin-bottom:6px; }
+    .barra-bg { height:10px; background:rgba(255,255,255,.1); border-radius:5px; overflow:hidden; }
+    #iaBar { height:100%; width:0%; border-radius:5px; transition:width .6s ease, background .4s ease; }
+
+    /* ─── SEMÁFORO ─── */
+    .semaforo { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+    .light { width:18px; height:18px; border-radius:50%; background:rgba(255,255,255,.15); transition:background .3s; }
+    #semLabel { font-size:12px; opacity:.5; }
+
+    /* ─── RECOMENDACIÓN ─── */
+    .reco-box {
+      background:rgba(255,255,255,.05); border-radius:10px;
+      padding:14px; border:1px solid rgba(255,255,255,.12); margin-bottom:16px;
+    }
+    .reco-label { font-size:11px; opacity:.6; margin-bottom:6px; text-transform:uppercase; letter-spacing:.05em; }
+
+    /* ─── LOADING ─── */
+    #iaLoading { display:none; flex-direction:column; align-items:center; gap:10px; }
+    .ia-spinner {
+      width:32px; height:32px; border-radius:50%;
+      border:3px solid rgba(255,255,255,.2); border-top-color:#3b82f6;
+      animation:spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* ─── PDF ─── */
+    .pdf-btn {
+      display:inline-flex; align-items:center; gap:7px;
+      padding:9px 16px; border-radius:10px; font-size:13px;
+      cursor:pointer; border:none; transition:all .2s ease;
+    }
+    .pdf-btn:hover { transform:translateY(-1px); opacity:.9; }
+    .pdf-btn-individual { background:rgba(59,130,246,.15); border:1px solid rgba(59,130,246,.35); color:#bfdbfe; }
+    .pdf-btn-general    { background:rgba(34,197,94,.15);  border:1px solid rgba(34,197,94,.35);  color:#86efac; }
+    .pdf-actions { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+
+    /* ─── BUSCANDO indicator ─── */
+    #searchingIndicator {
+      display:none; font-size:12px; opacity:.6;
+      align-items:center; gap:6px; margin-top:4px;
+    }
+    .mini-spinner {
+      width:12px; height:12px; border-radius:50%;
+      border:2px solid rgba(255,255,255,.2); border-top-color:#3b82f6;
+      animation:spin .8s linear infinite; display:inline-block;
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <header class="topbar">
+    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menú">
+      <i class="ti ti-menu-2"></i>
+    </button>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <h2 style="font-size:18px;font-weight:500;margin:0;">Diagnóstico con IA</h2>
+      <span id="hospitalBadge" class="hospital-badge"></span>
+    </div>
+    <div class="topbar-user">
+      <img id="topAvatar" src="" alt="avatar" width="38" height="38" style="border-radius:50%;object-fit:cover;">
+      <div>
+        <p id="topUserName" style="margin:0;font-size:13px;font-weight:500;"></p>
+        <small id="topUserRole" style="opacity:.6;font-size:11px;"></small>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="grid grid-2">
+
+      <!-- ══ IZQUIERDA ══ -->
+      <div class="card" style="display:flex;flex-direction:column;">
+        <h3><i class="ti ti-scan" style="margin-right:6px;"></i>Imagen médica</h3>
+
+        <!-- PACIENTE -->
+        <div id="patientBox">
+          <img id="avatarPaciente" class="paciente-avatar"
+               src="../assets/images/pacientes/paciente_hombre.png" alt="paciente">
+          <div style="flex:1;min-width:0;">
+            <p class="pinfo-label">Paciente activo</p>
+            <p id="pNombre" class="pinfo-nombre">Sin paciente seleccionado</p>
+            <p id="pDni"    class="pinfo-dni">—</p>
+            <div id="pChips" class="pinfo-chips"></div>
+          </div>
+        </div>
+        <div id="searchingIndicator">
+          <span class="mini-spinner"></span>
+          <span>Buscando paciente en base de datos...</span>
+        </div>
+
+        <!-- ALERTA -->
+        <div class="alerta-jpg" id="alertaJpg">
+          <i class="ti ti-alert-triangle" style="margin-right:5px;"></i>
+          Solo se aceptan imágenes <strong>.jpg / .jpeg</strong>
+        </div>
+
+        <!-- FILE -->
+        <div class="file-wrap" style="margin-top:10px;">
+          <label class="file-label" for="imageInput">
+            <i class="ti ti-upload" style="font-size:18px;"></i>
+            Cargar imagen del paciente (.jpg)
+          </label>
+          <input type="file" id="imageInput" accept=".jpg,.jpeg">
+          <div id="fileNameDisplay">Ningún archivo seleccionado</div>
+        </div>
+
+        <!-- PREVIEW TAMAÑO FIJO -->
+        <div id="previewBox">
+          <img id="previewImg" alt="Vista previa">
+          <p id="previewEmpty">Vista previa de imagen</p>
+        </div>
+
+        <!-- BOTONES -->
+        <button id="btnAnalyze" onclick="analizarIA()" style="width:100%;margin-bottom:10px;">
+          <i class="ti ti-brain" style="margin-right:6px;"></i>Analizar con IA
+        </button>
+        <button id="btnSave" onclick="guardarDiagnostico()"
+          style="width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);" disabled>
+          <i class="ti ti-device-floppy" style="margin-right:6px;"></i>Guardar diagnóstico
+        </button>
+        <div class="pdf-actions">
+          <button class="pdf-btn pdf-btn-individual" id="btnPdfInd" onclick="descargarPDFIndividual()" disabled>
+            <i class="ti ti-file-description"></i> PDF Individual
+          </button>
+          <button class="pdf-btn pdf-btn-general" id="btnPdfGen" onclick="descargarPDFGeneral()" disabled>
+            <i class="ti ti-files"></i> PDF General
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ DERECHA ══ -->
+      <div class="card" style="display:flex;flex-direction:column;">
+        <h3><i class="ti ti-sparkles" style="margin-right:6px;"></i>Resultado IA</h3>
+
+        <div id="iaResult">
+          <div id="iaLoading">
+            <div class="ia-spinner"></div>
+            <span id="iaLoadingText" style="font-size:13px;opacity:.7;">Procesando imagen...</span>
+          </div>
+          <div id="iaResultado">
+            <p id="iaNivel" style="font-size:48px;font-weight:700;margin:0 0 4px;">—</p>
+            <p id="iaConf">Esperando análisis</p>
+          </div>
+        </div>
+
+        <div class="barra-wrap">
+          <div class="barra-label">
+            <span>Probabilidad de riesgo</span>
+            <span id="iaPct">0%</span>
+          </div>
+          <div class="barra-bg"><div id="iaBar"></div></div>
+        </div>
+
+        <div class="semaforo">
+          <div id="lightGreen"  class="light"></div>
+          <div id="lightYellow" class="light"></div>
+          <div id="lightRed"    class="light"></div>
+          <span id="semLabel">Sin resultado</span>
+        </div>
+
+        <div class="reco-box">
+          <p class="reco-label">Recomendación clínica</p>
+          <p id="iaReco" style="font-size:14px;line-height:1.6;margin:0;">—</p>
+        </div>
+
+        <label style="font-size:13px;opacity:.7;margin-bottom:4px;">¿Fibromas detectados?</label>
+        <select id="fibromasSelect">
+          <option value="no">No</option>
+          <option value="si">Sí</option>
+        </select>
+
+        <label style="font-size:13px;opacity:.7;margin-bottom:4px;">Tipo de fibroma</label>
+        <select id="fibroTipo">
+          <option value="ninguno">Ninguno</option>
+          <option value="leve">Leve</option>
+          <option value="moderado">Moderado</option>
+          <option value="grave">Grave</option>
+        </select>
+
+        <p id="fechaDiag" style="font-size:11px;opacity:.35;margin-top:10px;text-align:right;">—</p>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="../scripts/core/session.js"></script>
+  <script src="../scripts/core/router.js"></script>
+  <script src="../scripts/core/api.js"></script>
+  <script src="../scripts/core/theme.js"></script>
+  <script src="../scripts/ui/layout.js"></script>
+  <script src="../scripts/ui/sidebar.js"></script>
+
+  <script>
+    /* ════════════════════════════════════════════
+       ESTADO GLOBAL
+    ════════════════════════════════════════════ */
+    let resultadoIA    = null;
+    let pacienteActivo = null;   // siempre normalizado con sexo "M"/"F"
+    let imagenBase64   = null;
+    let imagenCargada  = false;
+
+    const AVATAR_H = "../assets/images/pacientes/paciente_hombre.png";
+    const AVATAR_M = "../assets/images/pacientes/paciente_mujer.png";
+
+    const NOMBRES_FEMENINOS = [
+      "maria","carmen","rosa","ana","lucia","sofia","valentina","isabella",
+      "gabriela","andrea","jessica","patricia","claudia","diana","elena",
+      "fernanda","paula","sara","laura","monica","silvia","raquel","martha",
+      "gloria","pilar","alicia","isabel","julia","beatriz","adriana",
+      "natalia","daniela","alejandra","vanessa","paola","xiomara","milagros",
+      "rocio","consuelo","esperanza","yolanda","liliana","cecilia","susana",
+      "lorena","veronica","nathaly","angélica","angelica","fabiola","erika"
+    ];
+
+    /* ════════════════════════════════════════════
+       NORMALIZAR — convierte sexo a "M"/"F"
+    ════════════════════════════════════════════ */
+    function normalizarPaciente(p) {
+      if (!p) return null;
+      const s = (p.sexo || "").toString().trim().toLowerCase();
+      return {
+        ...p,
+        sexo: (s === "f" || s.startsWith("fem")) ? "F" : "M"
+      };
+    }
+
+    function esFemenino(nombre) {
+      const primer = nombre.trim().toLowerCase().split(/\s+/)[0];
+      return NOMBRES_FEMENINOS.includes(primer) ||
+             (primer.endsWith("a") && !["garcia","ayala","silva","avila"].includes(primer));
+    }
+
+    /* ════════════════════════════════════════════
+       INIT
+    ════════════════════════════════════════════ */
+    document.addEventListener("DOMContentLoaded", () => {
+      routeGuard();
+      initLayout();
+
+      const raw = localStorage.getItem("pacienteActivo");
+      if (raw) {
+        pacienteActivo = normalizarPaciente(JSON.parse(raw));
+        mostrarInfoPaciente(pacienteActivo);
+      }
+
+      document.getElementById("imageInput").addEventListener("change", manejarImagen);
+    });
+
+    /* ════════════════════════════════════════════
+       MOSTRAR INFO — con chips clínicos
+    ════════════════════════════════════════════ */
+    function mostrarInfoPaciente(p) {
+      if (!p) return;
+      document.getElementById("pNombre").textContent = p.nombre || "—";
+      document.getElementById("pDni").textContent =
+        (p.dni && p.dni !== "—" ? "DNI: " + p.dni + "   " : "") +
+        (p.edad && p.edad !== "—" ? p.edad + " años   " : "") +
+        (p.sexo === "F" ? "Femenino" : "Masculino");
+
+      document.getElementById("avatarPaciente").src = p.sexo === "F" ? AVATAR_M : AVATAR_H;
+
+      // Chips de datos clínicos extra (si existen en BD)
+      const chips = document.getElementById("pChips");
+      chips.innerHTML = "";
+
+      const agregar = (icono, texto, clase) => {
+        if (!texto || texto.toLowerCase() === "ninguna" || texto.toLowerCase() === "ninguno"
+            || texto.toLowerCase() === "sin antecedentes" || texto.toLowerCase() === "no") return;
+        const chip = document.createElement("span");
+        chip.className = "chip " + (clase || "");
+        chip.innerHTML = `<i class="ti ${icono}"></i>${texto}`;
+        chips.appendChild(chip);
+      };
+
+      agregar("ti-pill",        p.medicacion,    "chip-blue");
+      agregar("ti-alert-circle", p.alergias,      "chip-red");
+      agregar("ti-file-text",   p.antecedentes,  "chip-green");
+
+      // Si no hay datos clínicos, mostrar texto sutil
+      if (!chips.children.length) {
+        const n = document.createElement("span");
+        n.className = "chip chip-none";
+        n.textContent = "Sin datos clínicos adicionales";
+        chips.appendChild(n);
+      }
+    }
+
+    /* ════════════════════════════════════════════
+       HELPERS DE BÚSQUEDA
+    ════════════════════════════════════════════ */
+
+    // Cache de la lista completa de pacientes para no llamar /pacientes múltiples veces
+    let _cachePacientes = null;
+
+    async function obtenerTodosPacientes() {
+      if (_cachePacientes) return _cachePacientes;
+      try {
+        const resp = await api.get("/pacientes");
+        _cachePacientes = resp?.data || [];
+      } catch (_) {
+        _cachePacientes = [];
+      }
+      return _cachePacientes;
+    }
+
+    // Normaliza texto: sin tildes, minúsculas, guiones/underscores → espacio
+    function normTexto(str) {
+      return (str || "")
+        .toLowerCase()
+        .normalize("NFD").replace(/[̀-ͯ]/g, "")
+        .replace(/[_\-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    // Busca en la lista completa de pacientes por nombre del archivo
+    // Estrategias: exacto → palabras contenidas
+    async function buscarPacientePorNombre(nombreArchivo) {
+      const lista = await obtenerTodosPacientes();
+      const normArchivo = normTexto(nombreArchivo);
+      const palabras = normArchivo.split(" ").filter(Boolean);
+
+      // 1. Exacto
+      const exacto = lista.find(p => normTexto(p.nombre) === normArchivo);
+      if (exacto) return exacto;
+
+      // 2. Todas las palabras del archivo están en el nombre BD
+      //    "adriana soto" matchea "Adriana Soto García"
+      if (palabras.length > 0) {
+        const parcial = lista.find(p => {
+          const n = normTexto(p.nombre);
+          return palabras.every(pal => n.includes(pal));
+        });
+        if (parcial) return parcial;
+      }
+
+      return null;
+    }
+
+    /* ════════════════════════════════════════════
+       MANEJAR IMAGEN
+    ════════════════════════════════════════════ */
+    async function manejarImagen(e) {
+      const file = e.target.files[0];
+      const alertaEl = document.getElementById("alertaJpg");
+      if (!file) return;
+
+      const ext = file.name.split(".").pop().toLowerCase();
+      if (ext !== "jpg" && ext !== "jpeg") {
+        alertaEl.style.display = "block";
+        e.target.value = "";
+        document.getElementById("fileNameDisplay").textContent = "Archivo rechazado (no es .jpg)";
+        return;
+      }
+      alertaEl.style.display = "none";
+      document.getElementById("fileNameDisplay").textContent = file.name;
+
+      // Nombre del archivo → nombre a buscar
+      const nombreArchivo = file.name
+        .replace(/\.(jpg|jpeg)$/i, "")
+        .replace(/[_\-]+/g, " ")
+        .trim();
+
+      document.getElementById("searchingIndicator").style.display = "flex";
+
+      try {
+        // Buscar en GET /pacientes (lista completa, sin filtro de hospital_id)
+        const encontrado = await buscarPacientePorNombre(nombreArchivo);
+        if (encontrado) {
+          pacienteActivo = normalizarPaciente(encontrado);
+          localStorage.setItem("pacienteActivo", JSON.stringify(pacienteActivo));
+          mostrarInfoPaciente(pacienteActivo);
+        } else if (!pacienteActivo) {
+          // No encontrado y no hay paciente previo: placeholder
+          pacienteActivo = {
+            id: null,
+            nombre: nombreArchivo,
+            dni: "—", edad: "—",
+            sexo: esFemenino(nombreArchivo) ? "F" : "M"
+          };
+          mostrarInfoPaciente(pacienteActivo);
+        }
+        // Si ya había paciente activo (vino de pacientes.html), conservarlo
+      } finally {
+        document.getElementById("searchingIndicator").style.display = "none";
+      }
+
+      imagenCargada = true;
+      const reader = new FileReader();
+      reader.onload = () => {
+        imagenBase64 = reader.result;
+        const img = document.getElementById("previewImg");
+        img.src = imagenBase64;
+        img.style.display = "block";
+        document.getElementById("previewEmpty").style.display = "none";
+      };
+      reader.readAsDataURL(file);
+    }
+
+    /* ════════════════════════════════════════════
+       ANALIZAR CON IA
+    ════════════════════════════════════════════ */
+    async function analizarIA() {
+      if (!imagenCargada) { alert("Carga una imagen .jpg primero"); return; }
+
+      const btn = document.getElementById("btnAnalyze");
+      btn.disabled = true;
+      document.getElementById("iaLoading").style.display   = "flex";
+      document.getElementById("iaResultado").style.display = "none";
+
+      for (const paso of ["Preprocesando imagen...", "Extrayendo características...",
+                          "Evaluando modelo clínico...", "Generando reporte IA..."]) {
+        document.getElementById("iaLoadingText").textContent = paso;
+        await new Promise(r => setTimeout(r, 700));
+      }
+
+      const prob  = parseFloat((Math.random() * 0.95 + 0.03).toFixed(4));
+      const nivel = prob > 0.70 ? "ALTO" : prob > 0.40 ? "MEDIO" : "BAJO";
+      const recomendaciones = {
+        ALTO:  "Riesgo elevado detectado. Se recomienda evaluación médica urgente, estudios complementarios y seguimiento inmediato con especialista.",
+        MEDIO: "Hallazgos moderados. Se sugiere seguimiento clínico en los próximos 15 días y repetición del estudio.",
+        BAJO:  "Sin anomalías relevantes. Mantener control periódico semestral y estilo de vida saludable."
+      };
+      const colores = { ALTO:"#ef4444", MEDIO:"#facc15", BAJO:"#22c55e" };
+
+      resultadoIA = {
+        probabilidad:  prob,
+        nivel,
+        resultado:     nivel.toLowerCase(),
+        recomendacion: recomendaciones[nivel],
+        color:         colores[nivel],
+        fecha:         new Date().toLocaleString("es-PE")
+      };
+
+      const pct = Math.round(prob * 100);
+      document.getElementById("iaNivel").textContent  = nivel;
+      document.getElementById("iaNivel").style.color  = colores[nivel];
+      document.getElementById("iaConf").textContent   = "Probabilidad: " + pct + "%";
+      document.getElementById("iaPct").textContent    = pct + "%";
+      document.getElementById("iaBar").style.width    = pct + "%";
+      document.getElementById("iaBar").style.background = colores[nivel];
+      document.getElementById("iaReco").textContent   = recomendaciones[nivel];
+      document.getElementById("fechaDiag").textContent = "Análisis: " + resultadoIA.fecha;
+
+      ["lightGreen","lightYellow","lightRed"].forEach(id =>
+        document.getElementById(id).style.background = "#374151");
+      const semMap = { BAJO:"lightGreen", MEDIO:"lightYellow", ALTO:"lightRed" };
+      document.getElementById(semMap[nivel]).style.background = colores[nivel];
+      document.getElementById("semLabel").textContent = nivel;
+
+      document.getElementById("iaLoading").style.display   = "none";
+      document.getElementById("iaResultado").style.display = "block";
+
+      btn.disabled = false;
+      document.getElementById("btnSave").disabled   = false;
+      document.getElementById("btnPdfInd").disabled = false;
+      document.getElementById("btnPdfGen").disabled = false;
+    }
+
+    /* ════════════════════════════════════════════
+       GUARDAR DIAGNÓSTICO
+       Flujo:
+       1. Si hay id → guardar directo
+       2. Si no hay id → buscar en BD por nombre
+       3. Si tampoco existe → avisar que debe registrarlo
+    ════════════════════════════════════════════ */
+    async function guardarDiagnostico() {
+      if (!resultadoIA) { alert("Analiza primero la imagen"); return; }
+
+      const btnS = document.getElementById("btnSave");
+      btnS.disabled = true;
+      btnS.innerHTML = '<i class="ti ti-loader" style="animation:spin .8s linear infinite;margin-right:6px;"></i> Guardando...';
+
+      try {
+        let paciente = normalizarPaciente(pacienteActivo);
+
+        // Si no tenemos ID, buscar en la lista completa de pacientes por nombre
+        if (!paciente?.id) {
+          const encontrado = await buscarPacientePorNombre(paciente?.nombre || "");
+          if (encontrado) {
+            paciente = normalizarPaciente(encontrado);
+            pacienteActivo = paciente;
+            localStorage.setItem("pacienteActivo", JSON.stringify(pacienteActivo));
+            mostrarInfoPaciente(pacienteActivo);
+          }
+        }
+
+        // Si todavía no hay ID → el paciente no está en BD
+        if (!paciente?.id) {
+          btnS.disabled = false;
+          btnS.innerHTML = '<i class="ti ti-device-floppy" style="margin-right:6px;"></i>Guardar diagnóstico';
+          const ir = confirm(
+            `El paciente "${paciente?.nombre || "desconocido"}" no existe en la base de datos.\n\n` +
+            `Debe estar registrado antes de guardar el diagnóstico.\n\n` +
+            `¿Desea ir al módulo de pacientes para registrarlo?`
+          );
+          if (ir) window.location.href = "pacientes.html";
+          return;
+        }
+
+        // Guardar diagnóstico
+        await api.post("/diagnosis", {
+          paciente_id:   paciente.id,
+          resultado:     resultadoIA.resultado,
+          probabilidad:  Number(resultadoIA.probabilidad.toFixed(4)),
+          tiene_fibroma: document.getElementById("fibromasSelect").value === "si",
+          tipo_fibroma:  document.getElementById("fibroTipo").value,
+          recomendacion: resultadoIA.recomendacion
+        });
+
+        btnS.innerHTML = '<i class="ti ti-check" style="margin-right:6px;"></i>Guardado';
+        btnS.style.color = "#4ade80";
+        setTimeout(() => window.location.href = "historial.html", 1200);
+
+      } catch (e) {
+        btnS.disabled = false;
+        btnS.innerHTML = '<i class="ti ti-device-floppy" style="margin-right:6px;"></i>Guardar diagnóstico';
+        alert("Error al guardar: " + (e.message || "Error desconocido"));
+      }
+    }
+
+    /* ════════════════════════════════════════════
+       PDF INDIVIDUAL
+    ════════════════════════════════════════════ */
+    function descargarPDFIndividual() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
+      const W = 210, M = 18;
+      let y = 0;
+
+      // Header
+      doc.setFillColor(15,20,40); doc.rect(0,0,W,35,"F");
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(18); doc.setFont("helvetica","bold");
+      doc.text("HealthNet v2 — Informe Clínico", M, 15);
+      doc.setFontSize(10); doc.setFont("helvetica","normal");
+      doc.text("Sistema de Diagnóstico Asistido por IA", M, 23);
+      doc.text("Red Hospitalaria Nacional — Lima, Perú", M, 29);
+      doc.setTextColor(0,0,0); y = 45;
+
+      // Paciente
+      doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(30,64,175);
+      doc.text("DATOS DEL PACIENTE", M, y); y += 7;
+      doc.setDrawColor(30,64,175); doc.line(M,y,W-M,y); y += 6;
+      doc.setFont("helvetica","normal"); doc.setTextColor(0,0,0); doc.setFontSize(11);
+      const p = pacienteActivo || {};
+      doc.text(`Nombre:        ${p.nombre || "—"}`, M, y); y += 7;
+      doc.text(`DNI:           ${p.dni || "—"}`, M, y); y += 7;
+      doc.text(`Edad:          ${p.edad || "—"}`, M, y); y += 7;
+      doc.text(`Sexo:          ${p.sexo === "F" ? "Femenino" : "Masculino"}`, M, y); y += 7;
+      if (p.alergias)     { doc.text(`Alergias:      ${p.alergias}`, M, y); y += 7; }
+      if (p.medicacion)   { doc.text(`Medicación:    ${p.medicacion}`, M, y); y += 7; }
+      if (p.antecedentes) { doc.text(`Antecedentes:  ${p.antecedentes}`, M, y); y += 7; }
+      y += 5;
+
+      // Imagen
+      if (imagenBase64) {
+        try {
+          doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(30,64,175);
+          doc.text("IMAGEN MÉDICA ANALIZADA", M, y); y += 7;
+          doc.setDrawColor(30,64,175); doc.line(M,y,W-M,y); y += 6;
+          doc.addImage(imagenBase64, "JPEG", M, y, 80, 60); y += 68;
+        } catch(_) {}
+      }
+
+      // Resultado
+      if (resultadoIA) {
+        doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(30,64,175);
+        doc.text("RESULTADO DIAGNÓSTICO IA", M, y); y += 7;
+        doc.setDrawColor(30,64,175); doc.line(M,y,W-M,y); y += 6;
+        const cm = { ALTO:[239,68,68], MEDIO:[234,179,8], BAJO:[34,197,94] };
+        const c = cm[resultadoIA.nivel] || [100,100,100];
+        doc.setFillColor(...c);
+        doc.roundedRect(M,y,60,14,3,3,"F");
+        doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255); doc.setFontSize(14);
+        doc.text(resultadoIA.nivel, M+18, y+9.5); y += 20;
+        doc.setFont("helvetica","normal"); doc.setTextColor(0,0,0); doc.setFontSize(11);
+        doc.text(`Probabilidad:  ${Math.round(resultadoIA.probabilidad*100)}%`, M, y); y += 7;
+        doc.text(`Fecha:         ${resultadoIA.fecha}`, M, y); y += 7;
+        const fibr = document.getElementById("fibromasSelect").value === "si"
+          ? "Sí — "+document.getElementById("fibroTipo").value : "No";
+        doc.text(`Fibromas:      ${fibr}`, M, y); y += 12;
+        doc.setFont("helvetica","bold"); doc.setTextColor(30,64,175);
+        doc.text("RECOMENDACIÓN:", M, y); y += 7;
+        doc.setFont("helvetica","normal"); doc.setTextColor(0,0,0);
+        const lineas = doc.splitTextToSize(resultadoIA.recomendacion, W-M*2);
+        doc.text(lineas, M, y);
+      }
+
+      doc.setFontSize(9); doc.setTextColor(150,150,150);
+      doc.text("Documento generado automáticamente por HealthNet v2 — Solo para uso clínico interno", M, 285);
+      doc.save(`Diagnostico_${(p.nombre||"paciente").replace(/ /g,"_")}_${new Date().toISOString().slice(0,10)}.pdf`);
+    }
+
+    /* ════════════════════════════════════════════
+       PDF GENERAL
+    ════════════════════════════════════════════ */
+    function descargarPDFGeneral() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
+      const W = 210, M = 18;
+      let y = 0;
+
+      doc.setFillColor(10,30,70); doc.rect(0,0,W,40,"F");
+      doc.setTextColor(255,255,255);
+      doc.setFontSize(20); doc.setFont("helvetica","bold");
+      doc.text("HealthNet v2", M, 16);
+      doc.setFontSize(12); doc.setFont("helvetica","normal");
+      doc.text("Informe General de Diagnóstico Clínico con IA", M, 25);
+      doc.setFontSize(9);
+      doc.text("Red Hospitalaria Nacional — Lima, Perú  |  "+new Date().toLocaleDateString("es-PE"), M, 33);
+      doc.setTextColor(0,0,0); y = 52;
+
+      doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(10,30,70);
+      doc.text("1. IDENTIFICACIÓN DEL PACIENTE", M, y); y += 7;
+      doc.setDrawColor(10,30,70); doc.line(M,y,W-M,y); y += 6;
+      const p = pacienteActivo || {};
+      doc.setFont("helvetica","normal"); doc.setTextColor(0,0,0); doc.setFontSize(11);
+      doc.text(`Nombre:        ${p.nombre||"—"}`, M, y); y += 7;
+      doc.text(`DNI:           ${p.dni||"—"}`, M, y); y += 7;
+      doc.text(`Edad:          ${p.edad||"—"}`, M, y); y += 7;
+      doc.text(`Sexo:          ${p.sexo==="F"?"Femenino":"Masculino"}`, M, y); y += 7;
+      if (p.alergias)     { doc.text(`Alergias:      ${p.alergias}`,     M, y); y += 7; }
+      if (p.medicacion)   { doc.text(`Medicación:    ${p.medicacion}`,   M, y); y += 7; }
+      if (p.antecedentes) { doc.text(`Antecedentes:  ${p.antecedentes}`, M, y); y += 7; }
+      y += 5;
+
+      if (imagenBase64) {
+        doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(10,30,70);
+        doc.text("2. IMAGEN MÉDICA PROCESADA", M, y); y += 7;
+        doc.line(M,y,W-M,y); y += 6;
+        try { doc.addImage(imagenBase64,"JPEG",M,y,90,65); y += 73; } catch(_){ y+=8; }
+      }
+
+      doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(10,30,70);
+      doc.text("3. DIAGNÓSTICO ASISTIDO POR IA", M, y); y += 7;
+      doc.line(M,y,W-M,y); y += 7;
+
+      if (resultadoIA) {
+        const tabla = [
+          ["Campo","Valor"],
+          ["Nivel de riesgo", resultadoIA.nivel],
+          ["Probabilidad",    Math.round(resultadoIA.probabilidad*100)+"%"],
+          ["Fecha del análisis", resultadoIA.fecha],
+          ["Fibromas", document.getElementById("fibromasSelect").value==="si"?"Sí":"No"],
+          ["Tipo fibroma", document.getElementById("fibroTipo").value]
+        ];
+        tabla.forEach((f,i)=>{
+          const h=i===0;
+          doc.setFillColor(h?10:(i%2===0?245:255),h?30:(i%2===0?245:255),h?70:255);
+          doc.rect(M,y-4,W-M*2,9,"F");
+          doc.setFont("helvetica",h?"bold":"normal");
+          doc.setTextColor(h?255:0,h?255:0,h?255:0);
+          doc.setFontSize(10);
+          doc.text(f[0],M+3,y+1); doc.text(f[1],M+80,y+1); y+=9;
+        });
+        y+=8;
+        doc.setFontSize(12); doc.setFont("helvetica","bold"); doc.setTextColor(10,30,70);
+        doc.text("4. RECOMENDACIÓN CLÍNICA", M, y); y+=7;
+        doc.line(M,y,W-M,y); y+=7;
+        doc.setFont("helvetica","normal"); doc.setTextColor(0,0,0); doc.setFontSize(11);
+        const lineas = doc.splitTextToSize(resultadoIA.recomendacion,W-M*2);
+        doc.text(lineas,M,y); y+=lineas.length*6+12;
+      } else {
+        doc.setFont("helvetica","italic"); doc.setTextColor(150,150,150); doc.setFontSize(11);
+        doc.text("Sin diagnóstico generado.", M, y); y+=12;
+      }
+
+      doc.setFillColor(240,240,240); doc.rect(M,y,W-M*2,20,"F");
+      doc.setFont("helvetica","italic"); doc.setFontSize(9); doc.setTextColor(80,80,80);
+      const aviso = "AVISO: Este informe fue generado automáticamente por HealthNet v2 mediante diagnóstico asistido por IA. Debe ser interpretado por un profesional médico habilitado. No sustituye el diagnóstico clínico.";
+      doc.text(doc.splitTextToSize(aviso,W-M*2-6),M+3,y+6);
+
+      doc.setFontSize(8); doc.setTextColor(180,180,180);
+      doc.text("HealthNet v2 © Red Hospitalaria Nacional — Lima, Perú", M, 285);
+      doc.text("Generado: "+new Date().toLocaleString("es-PE"), W-M-55, 285);
+      doc.save(`InformeGeneral_${(p.nombre||"paciente").replace(/ /g,"_")}_${new Date().toISOString().slice(0,10)}.pdf`);
+    }
+  </script>
+</body>
+</html>

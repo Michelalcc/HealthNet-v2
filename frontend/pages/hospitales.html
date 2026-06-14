@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Red de Hospitales — HealthNet v2</title>
+
+  <link rel="stylesheet" href="../styles/base.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+  <link rel="stylesheet" href="../styles/themes.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+  <style>
+    /* ── HOSPITAL CARD ── */
+    .hospital-card {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-height: 200px;
+    }
+
+    .hospital-card-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    /* Logo del hospital — TAMAÑO FIJO UNIFORME */
+    .hospital-logo-wrap {
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      background: white;
+      border: 1px solid rgba(255,255,255,0.15);
+      overflow: hidden;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hospital-logo-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;    /* tamaño uniforme independiente de la imagen */
+      object-position: center;
+      display: block;
+    }
+
+    .hospital-card-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin: 0 0 4px;
+    }
+    .hospital-card-shortname {
+      font-size: 11px;
+      opacity: 0.5;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .hospital-card-divider {
+      height: 1px;
+      background: rgba(255,255,255,0.08);
+      margin: 12px 0;
+    }
+
+    .hospital-card-dir {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      opacity: 0.7;
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .hospital-card-dir i { margin-top: 2px; flex-shrink: 0; }
+
+    .hospital-badge-wrap {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .hospital-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      opacity: 0.6;
+    }
+    .dot-online {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      flex-shrink: 0;
+    }
+
+    /* ── FORM AGREGAR HOSPITAL ── */
+    .form-hospital {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* ── ESTADO MESSAGES ── */
+    .estado-msg {
+      text-align: center;
+      padding: 40px 20px;
+      opacity: 0.4;
+      font-size: 14px;
+    }
+
+    /* ── GRID personalizado para cards de hospital ── */
+    #hospitalesList {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <header class="topbar">
+    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menú">
+      <i class="ti ti-menu-2"></i>
+    </button>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <h2 style="font-size:18px;font-weight:500;margin:0;">Red de Hospitales</h2>
+      <span id="hospitalBadge" class="hospital-badge"></span>
+    </div>
+    <div class="topbar-user">
+      <img id="topAvatar" src="" alt="avatar" width="38" height="38"
+           style="border-radius:50%;object-fit:cover;">
+      <div>
+        <p id="topUserName" style="margin:0;font-size:13px;font-weight:500;"></p>
+        <small id="topUserRole" style="opacity:.6;font-size:11px;"></small>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- AGREGAR HOSPITAL (solo admin) -->
+    <div id="formCard" class="card" style="max-width:480px;margin-bottom:24px;display:none;">
+      <h3><i class="ti ti-building-plus" style="margin-right:6px;"></i>Agregar nuevo hospital</h3>
+      <div class="form-hospital">
+        <label>Nombre del hospital</label>
+        <input type="text" id="hNombre" placeholder="Ej: Hospital Nacional Arzobispo Loayza">
+        <label>Dirección</label>
+        <input type="text" id="hDireccion" placeholder="Ej: Av. Alfonso Ugarte 848, Lima">
+        <button onclick="agregarHospital()" style="width:100%;margin-top:4px;">
+          <i class="ti ti-plus" style="margin-right:6px;"></i>Agregar hospital
+        </button>
+        <div id="hMsg" style="margin-top:10px;font-size:13px;display:none;"></div>
+      </div>
+    </div>
+
+    <!-- LISTA -->
+    <div id="hospitalesList">
+      <div class="estado-msg" style="grid-column:1/-1;">
+        <i class="ti ti-loader" style="font-size:28px;display:block;margin-bottom:8px;"></i>
+        Cargando hospitales...
+      </div>
+    </div>
+
+  </main>
+
+  <script src="../scripts/core/session.js"></script>
+  <script src="../scripts/core/router.js"></script>
+  <script src="../scripts/core/api.js"></script>
+  <script src="../scripts/core/theme.js"></script>
+  <script src="../scripts/ui/layout.js"></script>
+  <script src="../scripts/ui/sidebar.js"></script>
+
+  <script>
+    /* ══════════════════════════════════════════
+       CONFIGURACIÓN VISUAL POR HOSPITAL
+       Mapea hospital_id → logo + color tema
+    ══════════════════════════════════════════ */
+    const HOSP_META = {
+      1: {
+        logo:      "../assets/images/logos/Logo_Cayetano.jpeg",
+        shortName: "HNCH",
+        color:     "#C9A84C"
+      },
+      2: {
+        logo:      "../assets/images/logos/Logo_Loayza.jpeg",
+        shortName: "HNAL",
+        color:     "#16a34a"
+      },
+      3: {
+        logo:      "../assets/images/logos/Logo_Mayo.png",
+        shortName: "HNDM",
+        color:     "#2563eb"
+      }
+    };
+
+    /* ══════════════════════════════════════════
+       INIT
+    ══════════════════════════════════════════ */
+    document.addEventListener("DOMContentLoaded", () => {
+      routeGuard();
+      initLayout();
+
+      // Mostrar form solo a admin
+      const user = getUser();
+      if (user?.rol === "admin") {
+        document.getElementById("formCard").style.display = "block";
+      }
+
+      cargarHospitales();
+    });
+
+    /* ══════════════════════════════════════════
+       CARGAR HOSPITALES
+    ══════════════════════════════════════════ */
+    async function cargarHospitales() {
+      const lista = document.getElementById("hospitalesList");
+      try {
+        const data = await api.get("/hospitals");
+        const hospitales = data?.data || [];
+
+        if (!hospitales.length) {
+          lista.innerHTML = `<div class="estado-msg" style="grid-column:1/-1;">
+            <i class="ti ti-building-off" style="font-size:32px;display:block;margin-bottom:10px;"></i>
+            No hay hospitales registrados aún.
+          </div>`;
+          return;
+        }
+
+        lista.innerHTML = hospitales.map(h => {
+          const meta = HOSP_META[h.id] || {
+            logo:      "../assets/images/logos/logo.png",
+            shortName: "HOSP",
+            color:     "#6366f1"
+          };
+          return `
+            <div class="card hospital-card">
+              <div class="hospital-card-header">
+                <div class="hospital-logo-wrap">
+                  <img src="${meta.logo}" alt="${h.nombre}">
+                </div>
+                <div>
+                  <p class="hospital-card-title">${h.nombre}</p>
+                  <span class="hospital-card-shortname"
+                        style="color:${meta.color};">${meta.shortName}</span>
+                </div>
+              </div>
+
+              <div class="hospital-card-divider"></div>
+
+              <div class="hospital-card-dir">
+                <i class="ti ti-map-pin"></i>
+                ${h.direccion || "Dirección no registrada"}
+              </div>
+
+              <div class="hospital-badge-wrap">
+                <span class="hospital-badge"
+                      style="background:${meta.color}20;color:${meta.color};
+                             border:1px solid ${meta.color}40;
+                             padding:4px 12px;border-radius:20px;font-size:11px;font-weight:500;">
+                  ${meta.shortName}
+                </span>
+                <div class="hospital-status">
+                  <div class="dot-online"></div>
+                  Operativo
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("");
+
+      } catch (e) {
+        lista.innerHTML = `<div class="estado-msg" style="grid-column:1/-1;color:#f87171;">
+          <i class="ti ti-alert-circle" style="font-size:28px;display:block;margin-bottom:8px;"></i>
+          Error al cargar hospitales: ${e.message}
+        </div>`;
+      }
+    }
+
+    /* ══════════════════════════════════════════
+       AGREGAR HOSPITAL (solo admin)
+    ══════════════════════════════════════════ */
+    async function agregarHospital() {
+      const nombre    = document.getElementById("hNombre").value.trim();
+      const direccion = document.getElementById("hDireccion").value.trim();
+      const msg       = document.getElementById("hMsg");
+
+      if (!nombre) {
+        msg.style.display = "block";
+        msg.style.color   = "#f87171";
+        msg.textContent   = "El nombre del hospital es obligatorio";
+        return;
+      }
+
+      try {
+        await api.post("/hospitals", { nombre, direccion });
+        msg.style.display = "block";
+        msg.style.color   = "#4ade80";
+        msg.textContent   = "Hospital agregado correctamente";
+        document.getElementById("hNombre").value    = "";
+        document.getElementById("hDireccion").value = "";
+        await cargarHospitales();
+        setTimeout(() => { msg.style.display = "none"; }, 3000);
+      } catch (e) {
+        msg.style.display = "block";
+        msg.style.color   = "#f87171";
+        msg.textContent   = "Error: " + e.message;
+      }
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestión de Usuarios — HealthNet v2</title>
+
+  <link rel="stylesheet" href="../styles/base.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+  <link rel="stylesheet" href="../styles/themes.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+  <style>
+    /* ── USER ITEM ── */
+    .user-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      margin-bottom: 8px;
+      transition: background .2s;
+      gap: 10px;
+    }
+    .user-item:hover { background: rgba(255,255,255,0.07); }
+
+    .user-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    /* Avatar usuario — TAMAÑO FIJO UNIFORME */
+    .user-avatar-wrap {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid rgba(255,255,255,0.12);
+      flex-shrink: 0;
+    }
+    .user-avatar-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;      /* siempre mismo tamaño, centrado */
+      object-position: center;
+      display: block;
+    }
+
+    .user-info strong {
+      font-size: 13px;
+      display: block;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .user-info small {
+      font-size: 11px;
+      opacity: 0.45;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    /* BADGE ROL */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .badge-admin        { background:rgba(99,102,241,.2);  color:#a5b4fc; }
+    .badge-doctor       { background:rgba(22,163,74,.2);   color:#4ade80; }
+    .badge-especialista { background:rgba(201,168,76,.2);  color:#F0D080; }
+
+    /* BOTÓN ELIMINAR */
+    .btn-del {
+      padding: 6px 13px;
+      font-size: 12px;
+      border-radius: 7px;
+      background: rgba(239,68,68,.15);
+      border: 1px solid rgba(239,68,68,.3);
+      color: #f87171;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background .2s;
+    }
+    .btn-del:hover { background: rgba(239,68,68,.3); }
+
+    /* PROTEGIDO */
+    .badge-protegido {
+      font-size: 11px;
+      opacity: .3;
+      flex-shrink: 0;
+    }
+
+    /* FORM */
+    .form-users { display: flex; flex-direction: column; gap: 0; }
+
+    /* ESTADO */
+    .estado-msg {
+      text-align: center;
+      padding: 30px 20px;
+      opacity: 0.4;
+      font-size: 13px;
+    }
+
+    /* HOSPITAL NAMES */
+    .hosp-name {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <header class="topbar">
+    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menú">
+      <i class="ti ti-menu-2"></i>
+    </button>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <h2 style="font-size:18px;font-weight:500;margin:0;">Gestión de Usuarios</h2>
+      <span id="hospitalBadge" class="hospital-badge"></span>
+    </div>
+    <div class="topbar-user">
+      <img id="topAvatar" src="" alt="avatar" width="38" height="38"
+           style="border-radius:50%;object-fit:cover;">
+      <div>
+        <p id="topUserName" style="margin:0;font-size:13px;font-weight:500;"></p>
+        <small id="topUserRole" style="opacity:.6;font-size:11px;"></small>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="grid grid-2">
+
+      <!-- ────────────────────────────────────────
+           CREAR USUARIO
+      ──────────────────────────────────────── -->
+      <div class="card">
+        <h3><i class="ti ti-user-plus" style="margin-right:6px;"></i>Crear nuevo usuario</h3>
+        <div class="form-users">
+          <label>Nombre completo</label>
+          <input type="text" id="uNombre" placeholder="Nombre del usuario">
+
+          <label>Email institucional</label>
+          <input type="email" id="uEmail" placeholder="usuario@healthnet.com">
+
+          <label>Contraseña</label>
+          <input type="password" id="uPassword" placeholder="Mínimo 6 caracteres">
+
+          <label>Rol</label>
+          <select id="uRol">
+            <option value="doctor">Doctor</option>
+            <option value="especialista">Especialista</option>
+            <option value="admin">Admin</option>
+          </select>
+
+          <label>Hospital</label>
+          <select id="uHospital">
+            <option value="">Sin hospital (admin)</option>
+            <option value="1">Hospital Cayetano Heredia</option>
+            <option value="2">Hospital Almenara</option>
+            <option value="3">Hospital Dos de Mayo</option>
+          </select>
+
+          <button onclick="crearUsuario()" style="width:100%;margin-top:4px;">
+            <i class="ti ti-user-check" style="margin-right:6px;"></i>Crear usuario
+          </button>
+          <div id="uMsg" style="margin-top:10px;font-size:13px;display:none;"></div>
+        </div>
+      </div>
+
+      <!-- ────────────────────────────────────────
+           LISTA USUARIOS
+      ──────────────────────────────────────── -->
+      <div class="card">
+        <h3><i class="ti ti-users" style="margin-right:6px;"></i>Usuarios del sistema</h3>
+        <input type="text" id="buscarUser"
+               placeholder="Buscar por nombre, email o rol..."
+               oninput="filtrarUsuarios()">
+        <p id="contadorUsers" style="font-size:12px;opacity:.4;margin-bottom:10px;"></p>
+        <div id="usersList" style="max-height:520px;overflow-y:auto;">
+          <div class="estado-msg">
+            <i class="ti ti-loader" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+            Cargando...
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="../scripts/core/session.js"></script>
+  <script src="../scripts/core/router.js"></script>
+  <script src="../scripts/core/api.js"></script>
+  <script src="../scripts/core/theme.js"></script>
+  <script src="../scripts/ui/layout.js"></script>
+  <script src="../scripts/ui/sidebar.js"></script>
+
+  <script>
+    /* ══════════════════════════════════════════
+       ESTADO
+    ══════════════════════════════════════════ */
+    let todosLosUsuarios = [];
+
+    const HOSP_NOMBRES = {
+      1: "Cayetano Heredia",
+      2: "Almenara",
+      3: "Dos de Mayo"
+    };
+
+    /* Avatares por rol — TAMAÑO FIJO con object-fit:cover */
+    const AVATARS = {
+      admin:        "../assets/images/users/admin.png",
+      doctor:       "../assets/images/users/doctor1.png",
+      especialista: "../assets/images/users/doc_esp.png"
+    };
+
+    /* ══════════════════════════════════════════
+       INIT
+    ══════════════════════════════════════════ */
+    document.addEventListener("DOMContentLoaded", () => {
+      routeGuard();
+      initLayout();
+      cargarUsuarios();
+    });
+
+    /* ══════════════════════════════════════════
+       CARGAR USUARIOS
+    ══════════════════════════════════════════ */
+    async function cargarUsuarios() {
+      try {
+        const data = await api.get("/users");
+        todosLosUsuarios = data?.data || [];
+        renderUsuarios(todosLosUsuarios);
+      } catch (e) {
+        document.getElementById("usersList").innerHTML =
+          `<div class="estado-msg" style="color:#f87171;">
+            <i class="ti ti-alert-circle" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+            ${e.message}
+          </div>`;
+      }
+    }
+
+    /* ══════════════════════════════════════════
+       RENDER LISTA
+    ══════════════════════════════════════════ */
+    function renderUsuarios(lista) {
+      const el       = document.getElementById("usersList");
+      const contador = document.getElementById("contadorUsers");
+      contador.textContent = lista.length + " usuario" + (lista.length !== 1 ? "s" : "");
+
+      if (!lista.length) {
+        el.innerHTML = `<div class="estado-msg">Sin usuarios que coincidan.</div>`;
+        return;
+      }
+
+      el.innerHTML = lista.map(u => {
+        const avatar  = AVATARS[u.rol] || AVATARS.admin;
+        const hospStr = u.hospital_id
+          ? `<span class="hosp-name"><i class="ti ti-building-hospital"></i>${HOSP_NOMBRES[u.hospital_id] || "Hospital " + u.hospital_id}</span>`
+          : `<span><i class="ti ti-shield-check"></i>Administración</span>`;
+
+        const estaProtegido = u.id === 1;
+
+        return `
+          <div class="user-item">
+            <div class="user-left">
+              <div class="user-avatar-wrap">
+                <img src="${avatar}" alt="${u.nombre || u.rol}">
+              </div>
+              <div class="user-info">
+                <strong>${u.nombre || u.email}</strong>
+                <small>
+                  <span>${u.email}</span>
+                  <span class="badge badge-${u.rol}">${u.rol}</span>
+                  ${hospStr}
+                </small>
+              </div>
+            </div>
+            ${estaProtegido
+              ? `<span class="badge-protegido"><i class="ti ti-lock"></i> Protegido</span>`
+              : `<button class="btn-del"
+                         onclick="eliminarUsuario(${u.id}, '${(u.nombre || u.email).replace(/'/g, "\\'")}')">
+                   <i class="ti ti-trash"></i>
+                 </button>`
+            }
+          </div>
+        `;
+      }).join("");
+    }
+
+    /* ══════════════════════════════════════════
+       FILTRAR
+    ══════════════════════════════════════════ */
+    function filtrarUsuarios() {
+      const q = document.getElementById("buscarUser").value.toLowerCase();
+      renderUsuarios(todosLosUsuarios.filter(u =>
+        (u.nombre || "").toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q) ||
+        u.rol.toLowerCase().includes(q)
+      ));
+    }
+
+    /* ══════════════════════════════════════════
+       CREAR USUARIO
+    ══════════════════════════════════════════ */
+    async function crearUsuario() {
+      const nombre   = document.getElementById("uNombre").value.trim();
+      const email    = document.getElementById("uEmail").value.trim();
+      const password = document.getElementById("uPassword").value.trim();
+      const rol      = document.getElementById("uRol").value;
+      const hospital = document.getElementById("uHospital").value;
+      const msg      = document.getElementById("uMsg");
+
+      // Validación básica
+      if (!email || !password) {
+        msg.style.display = "block";
+        msg.style.color   = "#f87171";
+        msg.textContent   = "Email y contraseña son obligatorios";
+        return;
+      }
+      if (password.length < 6) {
+        msg.style.display = "block";
+        msg.style.color   = "#f87171";
+        msg.textContent   = "La contraseña debe tener al menos 6 caracteres";
+        return;
+      }
+
+      try {
+        await api.post("/users", {
+          nombre:      nombre || null,
+          email,
+          password,
+          rol,
+          hospital_id: hospital ? parseInt(hospital) : null
+        });
+
+        msg.style.display = "block";
+        msg.style.color   = "#4ade80";
+        msg.textContent   = "Usuario creado correctamente";
+
+        // Limpiar form
+        document.getElementById("uNombre").value   = "";
+        document.getElementById("uEmail").value    = "";
+        document.getElementById("uPassword").value = "";
+        document.getElementById("uRol").value      = "doctor";
+        document.getElementById("uHospital").value = "";
+
+        await cargarUsuarios();
+        setTimeout(() => { msg.style.display = "none"; }, 3000);
+
+      } catch (e) {
+        msg.style.display = "block";
+        msg.style.color   = "#f87171";
+        msg.textContent   = "Error: " + e.message;
+      }
+    }
+
+    /* ══════════════════════════════════════════
+       ELIMINAR USUARIO
+    ══════════════════════════════════════════ */
+    async function eliminarUsuario(id, nombre) {
+      if (!confirm(`¿Eliminar al usuario "${nombre}"?\nEsta acción no se puede deshacer.`)) return;
+      try {
+        await api.delete("/users/" + id);
+        await cargarUsuarios();
+      } catch (e) {
+        alert("Error al eliminar: " + e.message);
+      }
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+.historial-item {
+  background: rgba(255,255,255,0.05);
+  border-left: 4px solid #3b82f6;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.historial-fecha    { font-size: 12px; opacity: 0.6; margin-bottom: 4px; }
+.historial-resultado { font-size: 20px; font-weight: bold; margin-bottom: 6px; }
+.nivel-alto  { color: #ef4444; }
+.nivel-medio { color: #facc15; }
+.nivel-bajo  { color: #22c55e; }
+.historial-reco  { font-size: 14px; margin-bottom: 4px; }
+.historial-extra { font-size: 12px; opacity: 0.6; }

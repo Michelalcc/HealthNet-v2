@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HealthNet v2 — Iniciar sesión</title>
+  <link rel="stylesheet" href="../styles/login.css">
+</head>
+<body class="page-login">
+
+  <div class="login-wrapper">
+
+    <!-- CARD -->
+    <div class="login-card">
+
+      <!-- LOGO -->
+      <div class="login-logo-wrap">
+        <img src="../assets/images/logos/logo.png" class="login-logo" alt="HealthNet">
+      </div>
+
+      <!-- TÍTULOS -->
+      <h1 class="login-title">HealthNet <span>v2</span></h1>
+      <p class="login-sub">Sistema de Gestión Hospitalaria</p>
+
+      <!-- FORM -->
+      <div class="login-form">
+
+        <div class="input-group">
+          <span class="input-icon">✉</span>
+          <input
+            type="email"
+            id="email"
+            placeholder="Correo institucional"
+            autocomplete="email"
+          >
+        </div>
+
+        <div class="input-group">
+          <span class="input-icon">🔒</span>
+          <input
+            type="password"
+            id="password"
+            placeholder="Contraseña"
+            autocomplete="current-password"
+          >
+        </div>
+
+        <button id="loginBtn" onclick="handleLogin()">
+          <span id="btnText">Ingresar al sistema</span>
+          <span id="btnSpinner" class="spinner hidden"></span>
+        </button>
+
+        <!-- ERROR -->
+        <div id="errorBox" class="error-box hidden">
+          <span id="errorMsg">Error</span>
+        </div>
+
+      </div>
+
+      <!-- FOOTER -->
+      <p class="login-footer">
+        Red Hospitalaria Nacional &nbsp;·&nbsp; Lima, Perú
+      </p>
+
+    </div>
+
+    <!-- INDICADOR DE HOSPITALES -->
+    <div class="hospital-indicator">
+      <div class="hi-dot dot-gold"></div>
+      <div class="hi-dot dot-green"></div>
+      <div class="hi-dot dot-blue"></div>
+    </div>
+
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="../scripts/core/session.js"></script>
+  <script src="../scripts/core/router.js"></script>
+
+  <script type="module">
+    import { login } from "../scripts/core/auth.js";
+
+    // Si ya hay sesión activa → redirigir
+    document.addEventListener("DOMContentLoaded", () => {
+      const token   = localStorage.getItem("token");
+      const userRaw = localStorage.getItem("user");
+      if (token && userRaw) {
+        try {
+          const user = JSON.parse(userRaw);
+          if (user?.rol) redirectByRole(user.rol);
+        } catch { localStorage.clear(); }
+      }
+    });
+
+    // LOGIN
+    window.handleLogin = async function () {
+      const email    = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const errorBox = document.getElementById("errorBox");
+      const errorMsg = document.getElementById("errorMsg");
+      const btn      = document.getElementById("loginBtn");
+      const btnText  = document.getElementById("btnText");
+      const spinner  = document.getElementById("btnSpinner");
+
+      // Reset
+      errorBox.classList.add("hidden");
+
+      // Validar campos
+      if (!email || !password) {
+        errorMsg.textContent = "Completa todos los campos";
+        errorBox.classList.remove("hidden");
+        return;
+      }
+
+      // UX: loading
+      btn.disabled = true;
+      btnText.textContent = "Verificando...";
+      spinner.classList.remove("hidden");
+
+      const res = await login(email, password);
+
+      if (!res?.ok) {
+        errorMsg.textContent = res?.message || "Credenciales inválidas";
+        errorBox.classList.remove("hidden");
+        btn.disabled = false;
+        btnText.textContent = "Ingresar al sistema";
+        spinner.classList.add("hidden");
+        // Shake animation
+        document.querySelector(".login-card").classList.add("shake");
+        setTimeout(() => document.querySelector(".login-card").classList.remove("shake"), 500);
+        return;
+      }
+
+      // Éxito → redirigir
+      btnText.textContent = "Bienvenido...";
+      const user = JSON.parse(localStorage.getItem("user"));
+      setTimeout(() => redirectByRole(user.rol), 400);
+    };
+
+    // Enter para submit
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleLogin();
+    });
+  </script>
+
+</body>
+</html>

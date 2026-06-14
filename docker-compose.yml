@@ -1,0 +1,55 @@
+# ============================================================
+# HEALTHNET V2 — docker-compose.yml
+# Guardar en: la RAÍZ del proyecto
+# ============================================================
+
+version: "3.9"
+
+services:
+
+  # ── BASE DE DATOS ─────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: healthnet_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     michelalfonzoc
+      POSTGRES_PASSWORD: hn1234
+      POSTGRES_DB:       healthnetv2
+    volumes:
+      # Persistencia: los datos sobreviven si apagas Docker
+      - postgres_data:/var/lib/postgresql/data
+      # Ejecuta el schema automáticamente la primera vez
+      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U michelalfonzoc -d healthnetv2"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── BACKEND NODE.JS ───────────────────────────────────────
+  backend:
+    build: .
+    container_name: healthnet_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy   # espera que la BD esté lista
+    environment:
+      PORT:        3000
+      JWT_SECRET:  healthnet_secret_2024
+      DB_USER:     michelalfonzoc
+      DB_PASSWORD: hn1234
+      DB_NAME:     healthnetv2
+      DB_HOST:     db          # nombre del servicio, NO localhost
+      DB_PORT:     5432
+    ports:
+      - "3000:3000"
+    volumes:
+      # Monta el frontend para servirlo estático desde Node
+      - ./frontend:/app/frontend
+
+volumes:
+  postgres_data:

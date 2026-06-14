@@ -1,0 +1,16 @@
+/* HEALTHNET V2 — DASHBOARD CSS */
+.kpi { text-align: center; }
+.kpi h3 { font-size: 13px; opacity: .7; margin-bottom: 10px; }
+.kpi p  { font-size: 36px; font-weight: 700; margin: 0; }
+.kpi.alert { border-color: #ef4444 !important; }
+.kpi.alert p { color: #f87171; }
+
+.activity-item {
+  padding: 10px 14px;
+  border-left: 3px solid var(--primary-color);
+  background: rgba(255,255,255,.03);
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.activity-item span { opacity: .5; font-size: 11px; display: block; margin-top: 2px; }

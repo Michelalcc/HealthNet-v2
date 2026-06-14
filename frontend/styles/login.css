@@ -1,0 +1,279 @@
+/* ================================================
+   HEALTHNET V2 — LOGIN CSS
+   Guardar en: frontend/styles/login.css
+   ================================================ */
+
+/* RESET */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* BODY — FONDO REAL */
+body.page-login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background-image: url("../assets/images/fondos/fondo_login.png");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  /* Overlay oscuro encima del fondo para legibilidad */
+  position: relative;
+}
+
+body.page-login::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 20, 0.55);
+  z-index: 0;
+}
+
+/* WRAPPER CENTRADO */
+.login-wrapper {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  padding: 20px;
+}
+
+/* ------------------------------------------------
+   CARD GLASSMORPHISM
+   ------------------------------------------------ */
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 40px 36px 32px;
+  text-align: center;
+  color: white;
+  box-shadow:
+    0 25px 50px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255,255,255,0.05) inset;
+  transition: transform 0.2s ease;
+}
+
+.login-card:hover {
+  transform: translateY(-2px);
+}
+
+/* SHAKE animation para error */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-8px); }
+  40%       { transform: translateX(8px); }
+  60%       { transform: translateX(-5px); }
+  80%       { transform: translateX(5px); }
+}
+.login-card.shake {
+  animation: shake 0.4s ease;
+}
+
+/* ------------------------------------------------
+   LOGO
+   ------------------------------------------------ */
+.login-logo-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  overflow: hidden;
+}
+
+.login-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+/* ------------------------------------------------
+   TÍTULOS
+   ------------------------------------------------ */
+.login-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+  margin-bottom: 4px;
+}
+
+.login-title span {
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: 400;
+}
+
+.login-sub {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 28px;
+  letter-spacing: 0.3px;
+}
+
+/* ------------------------------------------------
+   FORM
+   ------------------------------------------------ */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* INPUT GROUP */
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 15px;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 13px 16px 13px 42px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: white;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.input-group input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.input-group input:focus {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ------------------------------------------------
+   BOTÓN
+   ------------------------------------------------ */
+button#loginBtn {
+  width: 100%;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s, transform 0.1s;
+  margin-top: 4px;
+}
+
+button#loginBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+button#loginBtn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+button#loginBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* SPINNER */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ------------------------------------------------
+   ERROR BOX
+   ------------------------------------------------ */
+.error-box {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: #fca5a5;
+  font-size: 13px;
+  text-align: left;
+}
+
+/* ------------------------------------------------
+   FOOTER
+   ------------------------------------------------ */
+.login-footer {
+  margin-top: 24px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 0.3px;
+}
+
+/* ------------------------------------------------
+   INDICADOR DE 3 HOSPITALES (puntos de colores)
+   ------------------------------------------------ */
+.hospital-indicator {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.hi-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+.dot-gold  { background: #C9A84C; }
+.dot-green { background: #16a34a; }
+.dot-blue  { background: #2563eb; }
+
+/* ------------------------------------------------
+   RESPONSIVE
+   ------------------------------------------------ */
+@media (max-width: 480px) {
+  .login-card {
+    padding: 32px 24px 28px;
+    border-radius: 18px;
+  }
+  .login-title { font-size: 22px; }
+}

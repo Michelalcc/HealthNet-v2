@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — HealthNet v2</title>
+  <link rel="stylesheet" href="../styles/base.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+  <link rel="stylesheet" href="../styles/dashboard.css">
+  <link rel="stylesheet" href="../styles/themes.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <header class="topbar">
+    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menú">
+      <i class="ti ti-menu-2"></i>
+    </button>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <h2 style="font-size:18px;font-weight:500;margin:0;">Dashboard Clínico</h2>
+      <span id="hospitalBadge" class="hospital-badge">—</span>
+    </div>
+    <div class="topbar-user">
+      <img id="topAvatar" src="" alt="avatar" width="38" height="38"
+           style="border-radius:50%;object-fit:cover;">
+      <div>
+        <p id="topUserName" style="margin:0;font-size:13px;font-weight:500;"></p>
+        <small id="topUserRole" style="opacity:.6;font-size:11px;"></small>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- KPIs -->
+    <section class="grid" style="margin-bottom:20px;">
+      <div class="card kpi">
+        <h3><i class="ti ti-users" style="margin-right:6px;"></i>Pacientes</h3>
+        <p id="kpiPatients">—</p>
+      </div>
+      <div class="card kpi">
+        <h3><i class="ti ti-brain" style="margin-right:6px;"></i>Diagnósticos</h3>
+        <p id="kpiDiagnoses">—</p>
+      </div>
+      <div class="card kpi alert">
+        <h3><i class="ti ti-alert-triangle" style="margin-right:6px;"></i>Críticos</h3>
+        <p id="kpiCritical">—</p>
+      </div>
+    </section>
+
+    <!-- FILA INFERIOR -->
+    <section class="grid">
+
+      <!-- ACTIVIDAD RECIENTE -->
+      <div class="card">
+        <h3><i class="ti ti-activity" style="margin-right:6px;"></i>Actividad reciente</h3>
+        <div id="activityFeed">
+          <p style="opacity:.5;font-size:13px;">Cargando actividad...</p>
+        </div>
+      </div>
+
+      <!-- HOSPITAL ACTIVO -->
+      <div class="card">
+        <h3><i class="ti ti-building-hospital" style="margin-right:6px;"></i>Hospital activo</h3>
+        <p id="hospitalName"
+           style="font-size:16px;font-weight:500;color:var(--primary-color);margin-bottom:8px;">—</p>
+        <p style="font-size:13px;opacity:.7;margin-bottom:14px;">
+          Sistema operando con normalidad
+        </p>
+
+        <!-- Accesos rápidos según rol -->
+        <div id="quickActions" style="display:flex;flex-direction:column;gap:8px;margin-top:4px;"></div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- SCRIPTS — orden importa, sin type="module" -->
+  <script src="../scripts/core/session.js"></script>
+  <script src="../scripts/core/router.js"></script>
+  <script src="../scripts/core/api.js"></script>
+  <script src="../scripts/core/theme.js"></script>
+  <script src="../scripts/ui/layout.js"></script>
+  <script src="../scripts/ui/sidebar.js"></script>
+
+  <script>
+
+    /* ══════════════════════════════════════
+       INIT — espera a que el DOM esté listo
+    ══════════════════════════════════════ */
+    document.addEventListener("DOMContentLoaded", async () => {
+      routeGuard();
+      initLayout();
+
+      // Nombre del hospital en el card
+      const config = getHospitalConfig();
+      const elNombre = document.getElementById("hospitalName");
+      if (elNombre) elNombre.textContent = config.name;
+
+      // Accesos rápidos según rol
+      renderQuickActions();
+
+      // Cargar KPIs y actividad
+      await Promise.all([cargarKPIs(), cargarActividad()]);
+    });
+
+    /* ══════════════════════════════════════
+       KPIs
+    ══════════════════════════════════════ */
+    async function cargarKPIs() {
+      try {
+        const data = await api.get("/dashboard");
+        document.getElementById("kpiPatients").textContent  = data.data.pacientes;
+        document.getElementById("kpiDiagnoses").textContent = data.data.diagnosticos;
+        document.getElementById("kpiCritical").textContent  = data.data.criticos;
+      } catch (e) {
+        console.error("Error KPIs:", e.message);
+        ["kpiPatients","kpiDiagnoses","kpiCritical"].forEach(id => {
+          document.getElementById(id).textContent = "—";
+        });
+      }
+    }
+
+    /* ══════════════════════════════════════
+       ACTIVIDAD RECIENTE (tabla alerts)
+    ══════════════════════════════════════ */
+    async function cargarActividad() {
+      const feed = document.getElementById("activityFeed");
+      try {
+        const data = await api.get("/alerts");
+        const items = data?.data || [];
+
+        if (!items.length) {
+          feed.innerHTML = `<p style="opacity:.4;font-size:13px;">Sin actividad reciente.</p>`;
+          return;
+        }
+
+        const iconoTipo = { info: "ti-info-circle", warning: "ti-alert-triangle", critical: "ti-alert-circle" };
+        const colorTipo = { info: "var(--primary-color)", warning: "#facc15", critical: "#ef4444" };
+
+        feed.innerHTML = items.map(a => {
+          const fecha = new Date(a.created_at).toLocaleString("es-PE", {
+            day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit"
+          });
+          const icono = iconoTipo[a.tipo] || "ti-info-circle";
+          const color = colorTipo[a.tipo] || "var(--primary-color)";
+          return `
+            <div class="activity-item">
+              <i class="ti ${icono}" style="color:${color};margin-right:6px;"></i>
+              ${a.mensaje}
+              <span>${fecha}</span>
+            </div>
+          `;
+        }).join("");
+
+      } catch (e) {
+        feed.innerHTML = `<p style="opacity:.4;font-size:13px;">Sin actividad reciente.</p>`;
+      }
+    }
+
+    /* ══════════════════════════════════════
+       ACCESOS RÁPIDOS POR ROL
+    ══════════════════════════════════════ */
+    function renderQuickActions() {
+      const user = getUser();
+      if (!user) return;
+      const rol  = user.rol;
+      const wrap = document.getElementById("quickActions");
+
+      const accionesPorRol = {
+        admin: [
+          { label: "Gestionar usuarios",   href: "users.html",      icon: "ti-user-cog" },
+          { label: "Ver hospitales",        href: "hospitales.html", icon: "ti-building-hospital" },
+          { label: "Ver pacientes",         href: "pacientes.html",  icon: "ti-users" }
+        ],
+        doctor: [
+          { label: "Registrar paciente",    href: "pacientes.html",  icon: "ti-user-plus" },
+          { label: "Ver historial",         href: "historial.html",  icon: "ti-clipboard-list" }
+        ],
+        especialista: [
+          { label: "Ir a diagnóstico",      href: "diagnostico.html", icon: "ti-brain" },
+          { label: "Ver historial",         href: "historial.html",   icon: "ti-clipboard-list" }
+        ]
+      };
+
+      const acciones = accionesPorRol[rol] || [];
+      wrap.innerHTML = acciones.map(a => `
+        <a href="${a.href}" style="
+          display:flex;align-items:center;gap:8px;
+          padding:9px 13px;border-radius:9px;
+          background:rgba(255,255,255,.05);
+          border:1px solid rgba(255,255,255,.08);
+          color:rgba(255,255,255,.8);font-size:13px;
+          transition:background .2s;">
+          <i class="ti ${a.icon}" style="color:var(--primary-color);font-size:15px;"></i>
+          ${a.label}
+        </a>
+      `).join("");
+    }
+  </script>
+
+</body>
+</html>

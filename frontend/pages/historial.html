@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Historial Clínico — HealthNet v2</title>
+
+  <link rel="stylesheet" href="../styles/base.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+  <link rel="stylesheet" href="../styles/themes.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+  <style>
+    /* ── HISTORIAL ITEMS ── */
+    .historial-item {
+      background: rgba(255,255,255,0.05);
+      border-left: 4px solid var(--primary-color, #3b82f6);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      transition: background .2s;
+    }
+    .historial-item:hover { background: rgba(255,255,255,0.08); }
+
+    .historial-fecha {
+      font-size: 11px;
+      opacity: 0.5;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .historial-resultado {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nivel-alto  { color: #ef4444; }
+    .nivel-medio { color: #facc15; }
+    .nivel-bajo  { color: #22c55e; }
+
+    .historial-reco {
+      font-size: 13px;
+      line-height: 1.6;
+      opacity: 0.85;
+      margin-bottom: 8px;
+    }
+
+    .historial-extra {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      opacity: 0.5;
+    }
+
+    .historial-extra span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ── PACIENTE BOX ── */
+    .paciente-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 20px;
+    }
+    .paciente-header img {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid rgba(255,255,255,0.15);
+      flex-shrink: 0;
+    }
+    .paciente-header .ph-name {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0 0 3px;
+    }
+    .paciente-header .ph-sub {
+      font-size: 12px;
+      opacity: 0.5;
+      margin: 0;
+    }
+
+    /* ── EMPTY / ERROR ── */
+    .estado-msg {
+      text-align: center;
+      padding: 40px 20px;
+      opacity: 0.4;
+      font-size: 14px;
+    }
+
+    /* ── FILTROS ── */
+    .filtros-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .filtros-bar input {
+      flex: 1;
+      min-width: 200px;
+      margin-bottom: 0;
+    }
+    .filtro-btn {
+      padding: 8px 14px;
+      font-size: 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06);
+      color: white;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .filtro-btn:hover,
+    .filtro-btn.activo {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    /* ── CONTADOR ── */
+    .contador-label {
+      font-size: 12px;
+      opacity: 0.45;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar" id="sidebar"></aside>
+
+  <header class="topbar">
+    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menú">
+      <i class="ti ti-menu-2"></i>
+    </button>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <h2 style="font-size:18px;font-weight:500;margin:0;">Historial Clínico</h2>
+      <span id="hospitalBadge" class="hospital-badge"></span>
+    </div>
+    <div class="topbar-user">
+      <img id="topAvatar" src="" alt="avatar" width="38" height="38"
+           style="border-radius:50%;object-fit:cover;">
+      <div>
+        <p id="topUserName" style="margin:0;font-size:13px;font-weight:500;"></p>
+        <small id="topUserRole" style="opacity:.6;font-size:11px;"></small>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="card">
+
+      <!-- HEADER PACIENTE -->
+      <div id="pacienteHeader" class="paciente-header" style="display:none;">
+        <img id="avatarPaciente"
+             src="../assets/images/pacientes/paciente_hombre.png"
+             alt="paciente">
+        <div>
+          <p class="ph-name" id="historialNombre">—</p>
+          <p class="ph-sub"  id="historialSubtitle">—</p>
+        </div>
+      </div>
+
+      <!-- SIN PACIENTE -->
+      <div id="sinPaciente" class="estado-msg" style="display:none;">
+        <i class="ti ti-user-x" style="font-size:32px;display:block;margin-bottom:10px;"></i>
+        Sin paciente seleccionado. Ve a
+        <a href="pacientes.html" style="color:var(--primary-color);">Pacientes</a>
+        y presiona "Diagnosticar".
+      </div>
+
+      <!-- FILTROS -->
+      <div id="filtrosBar" class="filtros-bar" style="display:none;">
+        <input type="text" id="buscarHistorial"
+               placeholder="Buscar en historial..."
+               oninput="filtrarHistorial()">
+        <button class="filtro-btn activo" onclick="setFiltro('todos',this)">Todos</button>
+        <button class="filtro-btn" onclick="setFiltro('alto',this)">
+          <span style="color:#ef4444;">● </span>Alto
+        </button>
+        <button class="filtro-btn" onclick="setFiltro('medio',this)">
+          <span style="color:#facc15;">● </span>Medio
+        </button>
+        <button class="filtro-btn" onclick="setFiltro('bajo',this)">
+          <span style="color:#22c55e;">● </span>Bajo
+        </button>
+      </div>
+
+      <!-- CONTADOR -->
+      <p id="contadorLabel" class="contador-label" style="display:none;"></p>
+
+      <!-- LISTA -->
+      <div id="historialLista">
+        <div class="estado-msg">
+          <i class="ti ti-loader" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+          Cargando...
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- SCRIPTS (orden importa: session → router → api → theme → layout → sidebar) -->
+  <script src="../scripts/core/session.js"></script>
+  <script src="../scripts/core/router.js"></script>
+  <script src="../scripts/core/api.js"></script>
+  <script src="../scripts/core/theme.js"></script>
+  <script src="../scripts/ui/layout.js"></script>
+  <script src="../scripts/ui/sidebar.js"></script>
+
+  <script>
+    /* ══════════════════════════════════════════
+       ESTADO
+    ══════════════════════════════════════════ */
+    let todosLosDiagnosticos = [];
+    let filtroActual = "todos";
+
+    const AVATAR_H = "../assets/images/pacientes/paciente_hombre.png";
+    const AVATAR_M = "../assets/images/pacientes/paciente_mujer.png";
+
+    const COLORES  = { alto: "#ef4444", medio: "#facc15", bajo: "#22c55e" };
+    const ICONOS   = { alto: "ti-alert-triangle", medio: "ti-alert-circle", bajo: "ti-circle-check" };
+
+    /* ══════════════════════════════════════════
+       INIT — carga TODOS los diagnósticos del hospital
+       independiente de localStorage
+    ══════════════════════════════════════════ */
+    document.addEventListener("DOMContentLoaded", async () => {
+      routeGuard();
+      initLayout();
+
+      // Ocultar header de paciente individual — ahora mostramos lista general
+      document.getElementById("pacienteHeader").style.display = "none";
+      document.getElementById("sinPaciente").style.display    = "none";
+
+      await cargarTodosLosHistoriales();
+    });
+
+    /* ══════════════════════════════════════════
+       CARGAR TODOS LOS DIAGNÓSTICOS DEL HOSPITAL
+    ══════════════════════════════════════════ */
+    async function cargarTodosLosHistoriales() {
+      const lista = document.getElementById("historialLista");
+      lista.innerHTML = `<div class="estado-msg">
+        <i class="ti ti-loader" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+        Cargando historial...
+      </div>`;
+
+      try {
+        const resp = await api.get("/diagnosis");
+        todosLosDiagnosticos = resp?.data || [];
+
+        if (!todosLosDiagnosticos.length) {
+          lista.innerHTML = `<div class="estado-msg">
+            <i class="ti ti-clipboard-x" style="font-size:32px;display:block;margin-bottom:10px;"></i>
+            No hay diagnósticos registrados aún.
+          </div>`;
+          return;
+        }
+
+        document.getElementById("filtrosBar").style.display    = "flex";
+        document.getElementById("contadorLabel").style.display = "block";
+        renderHistorial(todosLosDiagnosticos);
+
+      } catch (e) {
+        lista.innerHTML = `<div class="estado-msg" style="color:#f87171;">
+          <i class="ti ti-alert-circle" style="font-size:28px;display:block;margin-bottom:8px;"></i>
+          Error al cargar historial: ${e.message}
+        </div>`;
+      }
+    }
+
+    /* ══════════════════════════════════════════
+       RENDER — cada card muestra datos del paciente
+    ══════════════════════════════════════════ */
+    function renderHistorial(lista) {
+      const el       = document.getElementById("historialLista");
+      const contador = document.getElementById("contadorLabel");
+
+      if (!lista.length) {
+        el.innerHTML = `<div class="estado-msg">Sin resultados para este filtro.</div>`;
+        contador.textContent = "0 registros";
+        return;
+      }
+
+      contador.textContent = lista.length + " registro" + (lista.length !== 1 ? "s" : "");
+
+      el.innerHTML = lista.map(d => {
+        const fecha    = new Date(d.created_at);
+        const fechaStr = fecha.toLocaleDateString("es-PE", { day:"2-digit", month:"long", year:"numeric" });
+        const horaStr  = fecha.toLocaleTimeString("es-PE", { hour:"2-digit", minute:"2-digit" });
+        const pct      = Math.round((parseFloat(d.probabilidad) || 0) * 100);
+        const nivel    = (d.resultado || "bajo").toLowerCase();
+        const color    = COLORES[nivel]  || "#6b7280";
+        const icono    = ICONOS[nivel]   || "ti-circle";
+        const sexo     = (d.sexo || "M").toUpperCase();
+        const avatar   = sexo === "F" ? AVATAR_M : AVATAR_H;
+
+        return `
+          <div class="historial-item">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+              <img src="${avatar}" alt="paciente"
+                   style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid ${color};">
+              <div>
+                <div style="font-weight:600;font-size:15px;">${d.paciente_nombre || "—"}</div>
+                <div style="font-size:12px;opacity:.6;">
+                  DNI: ${d.dni || "—"} &nbsp;|&nbsp; ${d.edad || "—"} años &nbsp;|&nbsp;
+                  ${sexo === "F" ? "Femenino" : "Masculino"}
+                </div>
+              </div>
+              <div class="historial-resultado nivel-${nivel}" style="margin-left:auto;">
+                <i class="ti ${icono}"></i> ${nivel.toUpperCase()}
+              </div>
+            </div>
+            <div class="historial-fecha">
+              <i class="ti ti-calendar"></i>${fechaStr} &nbsp;·&nbsp;
+              <i class="ti ti-clock"></i>${horaStr}
+            </div>
+            <div class="historial-reco">${d.recomendacion || "—"}</div>
+            <div class="historial-extra">
+              <span><i class="ti ti-percent"></i>Probabilidad: ${pct}%</span>
+              <span><i class="ti ti-microscope"></i>Fibroma: ${d.tiene_fibroma ? "Sí" : "No"}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    /* ══════════════════════════════════════════
+       FILTROS — también busca por nombre de paciente
+    ══════════════════════════════════════════ */
+    function setFiltro(nivel, btn) {
+      filtroActual = nivel;
+      document.querySelectorAll(".filtro-btn").forEach(b => b.classList.remove("activo"));
+      btn.classList.add("activo");
+      filtrarHistorial();
+    }
+
+    function filtrarHistorial() {
+      const texto = (document.getElementById("buscarHistorial")?.value || "").toLowerCase();
+      let resultado = todosLosDiagnosticos;
+
+      if (filtroActual !== "todos") {
+        resultado = resultado.filter(d => d.resultado?.toLowerCase() === filtroActual);
+      }
+      if (texto) {
+        resultado = resultado.filter(d =>
+          (d.paciente_nombre || "").toLowerCase().includes(texto) ||
+          (d.dni             || "").toLowerCase().includes(texto) ||
+          (d.recomendacion   || "").toLowerCase().includes(texto) ||
+          (d.resultado       || "").toLowerCase().includes(texto)
+        );
+      }
+      renderHistorial(resultado);
+    }
+  </script>
+
+</body>
+</html>

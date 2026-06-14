@@ -1,0 +1,29 @@
+/* HEALTHNET V2 — USERS MODULE CSS */
+
+.user-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.07);
+  margin-bottom: 8px;
+  transition: background .2s;
+}
+.user-item:hover { background: rgba(255,255,255,.06); }
+.user-info strong { font-size: 13px; display: block; margin-bottom: 2px; }
+.user-info small  { font-size: 11px; opacity: .45; }
+
+.btn-del {
+  padding: 5px 12px;
+  font-size: 12px;
+  border-radius: 7px;
+  background: rgba(239,68,68,.15);
+  border: 1px solid rgba(239,68,68,.3);
+  color: #f87171;
+  cursor: pointer;
+  transition: background .2s;
+  white-space: nowrap;
+}
+.btn-del:hover { background: rgba(239,68,68,.3); }

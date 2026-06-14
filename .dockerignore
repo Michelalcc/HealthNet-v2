@@ -1,0 +1,28 @@
+# ============================================================
+# HEALTHNET V2 — .dockerignore
+# Guardar en: la RAÍZ del proyecto
+# ============================================================
+
+# Dependencias (se instalan dentro del contenedor)
+node_modules
+backend/node_modules
+
+# Variables de entorno locales (se pasan por docker-compose)
+backend/.env
+.env
+
+# Git
+.git
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode
+.idea

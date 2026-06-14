@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pacientes — HealthNet v2</title>
+  <link rel="stylesheet" href="../styles/base.css">
+  <link rel="stylesheet" href="../styles/layout.css">
+  <link rel="stylesheet" href="../styles/themes.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    .paciente-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; border-radius: 10px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.07);
+      margin-bottom: 8px; transition: background .2s;
+    }
+    .paciente-item:hover { background: rgba(255,255,255,.07); }
+    .paciente-info strong { font-size: 14px; display: block; margin-bottom: 2px; }
+    .paciente-info small  { font-size: 12px; opacity: .5; }
+    .badge-sexo {
+      display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px;
+      font-weight:600; margin-left:6px;
+    }
+    .badge-M { background:rgba(59,130,246,.2); color:#93c5fd; }
+    .badge-F { background:rgba(236,72,153,.2); color:#f9a8d4; }
+    .btn-diag {
+      padding: 7px 14px; font-size: 12px; border-radius: 8px;
+      background: var(--primary-color); color: white;
+      border: none; cursor: pointer; white-space: nowrap; transition: opacity .2s;
+    }
+    .btn-diag:hover { opacity: .8; }
+    .msg-box {
+      margin-top:10px; font-size:13px; padding:8px 12px;
+      border-radius:8px; display:none;
+    }
+    .msg-ok  { background:rgba(34,197,94,.15); color:#4ade80; border:1px solid rgba(34,197,94,.3); }
+    .msg-err { background:rgba(239,68,68,.15);  color:#f87171; border:1px solid rgba(239,68,68,.3); }
+  </style>
+</head>
+<body>
+  <aside class="sidebar" id="sidebar"></aside>
+  <header class="topbar">
+    <button class="menu-btn" onclick="toggleSidebar()">
+      <i class="ti ti-menu-2"></i>
+    </button>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <h2 style="font-size:18px;font-weight:500;margin:0;">Gestión de Pacientes</h2>
+      <span id="hospitalBadge" class="hospital-badge"></span>
+    </div>
+    <div class="topbar-user">
+      <img id="topAvatar" src="" alt="avatar" width="38" height="38" style="border-radius:50%;object-fit:cover;">
+      <div>
+        <p id="topUserName" style="margin:0;font-size:13px;font-weight:500;"></p>
+        <small id="topUserRole" style="opacity:0.6;font-size:11px;"></small>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="grid grid-2">
+
+      <!-- REGISTRAR PACIENTE -->
+      <div class="card">
+        <h3><i class="ti ti-user-plus" style="margin-right:6px;"></i>Registrar paciente</h3>
+
+        <label>Nombre completo</label>
+        <input type="text" id="pNombre" placeholder="Ej: Juan Pérez García">
+
+        <label>DNI</label>
+        <input type="text" id="pDni" placeholder="8 dígitos numéricos" maxlength="8"
+               oninput="this.value=this.value.replace(/\D/g,'')">
+
+        <label>Edad</label>
+        <input type="number" id="pEdad" placeholder="Edad en años" min="1" max="120">
+
+        <label>Sexo</label>
+        <select id="pSexo">
+          <option value="Masculino">Masculino</option>
+          <option value="Femenino">Femenino</option>
+        </select>
+
+        <div id="hospitalFieldWrap" style="display:none;">
+          <label>Hospital</label>
+          <select id="pHospital">
+            <option value="">Cargando hospitales...</option>
+          </select>
+        </div>
+
+        <button onclick="crearPaciente()" style="width:100%;margin-top:4px;">
+          <i class="ti ti-device-floppy" style="margin-right:6px;"></i>Registrar paciente
+        </button>
+        <div id="formMsg" class="msg-box"></div>
+      </div>
+
+      <!-- LISTA DE PACIENTES -->
+      <div class="card">
+        <h3><i class="ti ti-users" style="margin-right:6px;"></i>Pacientes del hospital</h3>
+        <input type="text" id="buscarInput"
+               placeholder="Buscar por nombre o DNI..."
+               oninput="filtrarPacientes()">
+        <div id="listaPacientes" style="max-height:450px;overflow-y:auto;">
+          <p style="opacity:.4;font-size:13px;">Cargando pacientes...</p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="../scripts/core/session.js"></script>
+  <script src="../scripts/core/router.js"></script>
+  <script src="../scripts/core/api.js"></script>
+  <script src="../scripts/core/theme.js"></script>
+  <script src="../scripts/ui/layout.js"></script>
+  <script src="../scripts/ui/sidebar.js"></script>
+
+  <script>
+    let todosLosPacientes = [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+      routeGuard();
+      initLayout();
+      cargarPacientes();
+
+      // Si es admin, mostrar selector de hospital y cargar lista
+      const user = getUser();
+      if (user?.rol === "admin") {
+        document.getElementById("hospitalFieldWrap").style.display = "block";
+        cargarHospitalesSelect();
+      }
+    });
+
+    // ── CARGAR HOSPITALES (para admin) ────────────
+    async function cargarHospitalesSelect() {
+      const sel = document.getElementById("pHospital");
+      try {
+        const data = await api.get("/hospitals");
+        const hospitales = data?.data || [];
+
+        if (!hospitales.length) {
+          sel.innerHTML = `<option value="">Sin hospitales registrados</option>`;
+          return;
+        }
+
+        sel.innerHTML = hospitales.map(h =>
+          `<option value="${h.id}">${h.nombre}</option>`
+        ).join("");
+      } catch (e) {
+        sel.innerHTML = `<option value="">Error al cargar hospitales</option>`;
+      }
+    }
+
+    // ── CARGAR ────────────────────────────────────
+    async function cargarPacientes() {
+      try {
+        // RUTA CORRECTA: /pacientes  (no /patients)
+        const data = await api.get("/pacientes");
+        todosLosPacientes = data?.data || [];
+        renderLista(todosLosPacientes);
+      } catch (e) {
+        document.getElementById("listaPacientes").innerHTML =
+          `<p style="color:#f87171;font-size:13px;">Error cargando pacientes: ${e.message}</p>`;
+      }
+    }
+
+    // ── RENDER ────────────────────────────────────
+    function renderLista(lista) {
+      const el = document.getElementById("listaPacientes");
+      if (!lista.length) {
+        el.innerHTML = `<p style="opacity:.4;font-size:13px;">Sin pacientes registrados.</p>`;
+        return;
+      }
+
+      el.innerHTML = lista.map(p => {
+        // sexo viene como "Masculino" / "Femenino" de la BD
+        const sexoLabel = p.sexo === "Femenino" ? "Femenino" : "Masculino";
+        const sexoKey   = p.sexo === "Femenino" ? "F" : "M";
+        return `
+          <div class="paciente-item">
+            <div class="paciente-info">
+              <strong>
+                ${p.nombre}
+                <span class="badge-sexo badge-${sexoKey}">${sexoLabel}</span>
+              </strong>
+              <small>DNI: ${p.dni} &nbsp;·&nbsp; ${p.edad} años</small>
+            </div>
+            <button class="btn-diag"
+              onclick='irADiagnostico(${JSON.stringify(JSON.stringify(p))})'>
+              <i class="ti ti-brain" style="margin-right:4px;"></i>Diagnosticar
+            </button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // ── FILTRAR ───────────────────────────────────
+    function filtrarPacientes() {
+      const q = document.getElementById("buscarInput").value.toLowerCase();
+      renderLista(todosLosPacientes.filter(p =>
+        p.nombre.toLowerCase().includes(q) ||
+        String(p.dni).includes(q)
+      ));
+    }
+
+    // ── IR A DIAGNÓSTICO ──────────────────────────
+    function irADiagnostico(jsonStr) {
+      const paciente = JSON.parse(jsonStr);
+      localStorage.setItem("pacienteActivo", JSON.stringify(paciente));
+      window.location.href = "diagnostico.html";
+    }
+
+    // ── CREAR PACIENTE ────────────────────────────
+    async function crearPaciente() {
+      const nombre = document.getElementById("pNombre").value.trim();
+      const dni    = document.getElementById("pDni").value.trim();
+      const edad   = document.getElementById("pEdad").value.trim();
+      const sexo   = document.getElementById("pSexo").value;    // "Masculino" / "Femenino"
+      const msgEl  = document.getElementById("formMsg");
+
+      // Reset msg
+      msgEl.style.display = "none";
+      msgEl.className = "msg-box";
+
+      // Validaciones
+      if (!nombre || !dni || !edad) {
+        mostrarMsg(msgEl, "Completa todos los campos", "err");
+        return;
+      }
+      if (!/^\d{8}$/.test(dni)) {
+        mostrarMsg(msgEl, "El DNI debe tener exactamente 8 dígitos numéricos", "err");
+        return;
+      }
+      if (parseInt(edad) < 1 || parseInt(edad) > 120) {
+        mostrarMsg(msgEl, "Ingresa una edad válida (1-120)", "err");
+        return;
+      }
+
+      // Si es admin, validar y obtener hospital_id
+      const user = getUser();
+      let hospital_id = null;
+      if (user?.rol === "admin") {
+        hospital_id = document.getElementById("pHospital").value;
+        if (!hospital_id) {
+          mostrarMsg(msgEl, "Selecciona un hospital", "err");
+          return;
+        }
+      }
+
+      try {
+        const payload = {
+          nombre,
+          dni,
+          edad: parseInt(edad),
+          sexo    // "Masculino" o "Femenino"
+        };
+        if (hospital_id) payload.hospital_id = parseInt(hospital_id);
+
+        await api.post("/pacientes", payload);
+
+        mostrarMsg(msgEl, "✓ Paciente registrado correctamente", "ok");
+        document.getElementById("pNombre").value = "";
+        document.getElementById("pDni").value    = "";
+        document.getElementById("pEdad").value   = "";
+        cargarPacientes();
+        setTimeout(() => { msgEl.style.display = "none"; }, 3500);
+
+      } catch (e) {
+        mostrarMsg(msgEl, e.message || "Error al registrar paciente", "err");
+      }
+    }
+
+    function mostrarMsg(el, texto, tipo) {
+      el.textContent   = texto;
+      el.className     = `msg-box msg-${tipo}`;
+      el.style.display = "block";
+    }
+  </script>
+</body>
+</html>
