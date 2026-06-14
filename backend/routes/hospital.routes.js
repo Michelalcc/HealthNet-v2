@@ -3,7 +3,8 @@ const ctrl   = require("../controllers/hospital.controller");
 const auth   = require("../middleware/auth.middleware");
 const role   = require("../middleware/role.middleware");
 
-router.get("/",  auth, ctrl.getHospitals);
-router.post("/", auth, role(["admin"]), ctrl.createHospital);
+router.get("/",       auth,                  ctrl.getHospitals);
+router.post("/",      auth, role(["admin"]), ctrl.createHospital);
+router.delete("/:id", auth, role(["admin"]), ctrl.deleteHospital);
 
 module.exports = router;
